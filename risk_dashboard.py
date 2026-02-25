@@ -180,11 +180,6 @@ def calculate_trend(current, week_ago):
     else:
         return change_pct, "neutral"
 
-def get_fear_greed_history():
-    """嘗試獲取過去7天的恐懼/貪澈指數歷史（需要付費API，這裡用多次請求模擬）"""
-    # 目前只能取得最新值，歷史資料需要付費 API
-    return None
-
 @st.cache_data(ttl=3600)
 def get_credit_spread_history(days=7):
     """獲取信用利差歷史數據"""
