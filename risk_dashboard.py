@@ -309,12 +309,13 @@ def main():
             st.write("**美元指數** 🟢 <100 | 🟡 100-105 | 🟠 105-110 | 🔴 >110")
             st.write("**USD/JPY** 🟢 <130 | 🟡 130-145 | 🟠 145-160 | 🔴 >160")
         
-        stock_symbol = st.text_input("📈 股票代碼", value="TSM").upper()
-        period = st.selectbox("數據時間範圍", ["6mo", "1y", "2y", "5y"], index=1)
+        # 隱藏股票代碼和時間範圍（使用預設值）
+        stock_symbol = "TSM"  # 隱藏輸入
+        period = "1y"  # 隱藏選擇
         
-        if st.button("🔄 刷新數據"):
-            st.cache_data.clear()
-            st.rerun()
+        if st.button("🔄 刷新數據_data.clear()
+           "):
+            st.cache st.rerun()
     
     # 載入數據
     with st.spinner("正在載入市場數據..."):
@@ -621,15 +622,17 @@ def main():
         # 創建彩色漸變
         colors = [get_risk_color(v) for v in risk_history.values]
         
+        # 計算y軸範圍（根據實際數據調整，使波動更明顯）
+        y_min = max(0, risk_history.min() - 10)
+        y_max = min(100, risk_history.max() + 10)
+        
         fig_risk = go.Figure()
         fig_risk.add_trace(go.Scatter(
             x=risk_history.index, 
             y=risk_history.values,
             mode='lines+markers',
-            line=dict(color='#00d4ff', width=2),
-            marker=dict(color=colors, size=4),
-            fill='tozeroy',
-            fillcolor='rgba(0, 212, 255, 0.1)'
+            line=dict(color='#00d4ff', width=3),
+            marker=dict(color=colors, size=5),
         ))
         
         # 添加風險區間背景
@@ -640,7 +643,7 @@ def main():
         
         fig_risk.update_layout(
             xaxis=dict(title="日期", rangeslider=dict(visible=True), color='#c8d8e8'),
-            yaxis=dict(title="風險指數", range=[0, 100], color='#c8d8e8', showgrid=True, gridcolor='#1e2d45'),
+            yaxis=dict(title="風險指數", range=[y_min, y_max], color='#c8d8e8', showgrid=True, gridcolor='#1e2d45'),
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
             font_color='#c8d8e8', height=350,
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
