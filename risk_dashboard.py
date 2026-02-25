@@ -462,39 +462,68 @@ def main():
     
     st.markdown("---")
     
-    # 指標柱狀圖 + 歷史圖
-    col_bar, col_history = st.columns([1, 2])
+    # 雷達圖 + 柱狀圖 + 歷史圖
+    col_radar, col_bar, col_history = st.columns([1, 1, 2])
+    
+    with col_radar:
+        labels = ['VIX', '信用利差', '恐懼/貪澈', '美元指數', 'USD/JPY']
+        values = [risk['vix'], risk['credit_spread'], risk['fear_greed'], risk['dollar'], risk['usd_jpy']]
+        labels.append(labels[0])
+        values.append(values[0])
+        
+        fig_radar = go.Figure(go.Scatterpolar(
+            r=values, theta=labels, fill='toself',
+            fillcolor='rgba(0,212,255,0.1)', line_color='#00d4ff'))
+        fig_radar.update_layout(
+            polar=dict(bgcolor='rgba(0,0,0,0)', 
+                      radialaxis=dict(visible=True, range=[0, 100], color='#4a6080'),
+                      angularaxis=dict(color='#c8d8e8', tickfont=dict(size=10, color='#c8d8e8'))),
+            paper_bgcolor='rgba(0,0,0,0)', font_color='#c8d8e8', height=300
+        )
+        st.subheader("風險雷達圖")
+        st.plotly_chart(fig_radar, use_container_width=True)
     
     with col_bar:
         st.subheader("📊 風險指標分數")
         
-        # 柱狀圖
+        # 柱狀圖（垂直）- 使用各指標燈號顏色
         indicator_names = ['VIX', '恐懼/貪澈', '信用利差', '美元指數', 'USD/JPY']
         indicator_values = [risk['vix'], risk['fear_greed'], risk['credit_spread'], risk['dollar'], risk['usd_jpy']]
-        indicator_colors = ['#ff4d6d', '#ffb347', '#00d4ff', '#8a9bb0', '#8a9bb0']
+        
+        # 根據燈號邏輯設定顏色
+        def get_light_color(key, value):
+            if key == 'vix':
+                return '#00ff9d' if value < 15 else '#ffb347' if value < 25 else '#ff8c00' if value < 35 else '#ff4d6d'
+            elif key == 'fear_greed':
+                return '#00ff9d' if value < 25 else '#ffb347' if value < 45 else '#8a9bb0' if value < 55 else '#ff8c00' if value < 75 else '#ff4d6d'
+            elif key == 'credit':
+                return '#00ff9d' if value < 2 else '#ffb347' if value < 3 else '#ff8c00' if value < 4 else '#ff4d6d'
+            elif key == 'dxy':
+                return '#00ff9d' if value < 100 else '#ffb347' if value < 105 else '#ff8c00' if value < 110 else '#ff4d6d'
+            else:  # usd_jpy
+                return '#00ff9d' if value < 130 else '#ffb347' if value < 145 else '#ff8c00' if value < 160 else '#ff4d6d'
+        
+        keys = ['vix', 'fear_greed', 'credit', 'dxy', 'usd_jpy']
+        indicator_colors = [get_light_color(k, v) for k, v in zip(keys, indicator_values)]
         
         fig_bar = go.Figure(go.Bar(
-            x=indicator_values,
-            y=indicator_names,
-            orientation='h',
+            x=indicator_names,
+            y=indicator_values,
             marker_color=indicator_colors,
             text=[f'{v:.1f}' for v in indicator_values],
             textposition='outside',
-            textfont=dict(color='#c8d8e8', size=12)
+            textfont=dict(color='#c8d8e8', size=11)
         ))
         fig_bar.update_layout(
             height=300,
-            xaxis=dict(range=[0, 100], showgrid=True, gridcolor='#1e2d45', color='#c8d8e8'),
-            yaxis=dict(showgrid=False, color='#c8d8e8'),
+            yaxis=dict(range=[0, 100], showgrid=True, gridcolor='#1e2d45', color='#c8d8e8'),
+            xaxis=dict(showgrid=False, color='#c8d8e8', tickangle=30),
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
             font_color='#c8d8e8',
-            margin=dict(l=100, r=50, t=30, b=30),
+            margin=dict(l=30, r=30, t=30, b=50),
         )
         st.plotly_chart(fig_bar, use_container_width=True)
-        
-        # 綜合風險指數
-        st.metric("綜合風險指數", f"{risk['total']:.1f}", delta=risk_level, delta_color="inverse")
     
     with col_history:
         st.subheader(f"📈 {stock_symbol} 與市場風險指數歷史關係")
