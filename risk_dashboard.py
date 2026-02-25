@@ -605,6 +605,7 @@ def main():
                               index=3, 
                               label_visibility="collapsed")
     with col_stock:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)  # 對齊間距
         compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, NVDA, SPY, TSM, 2330.TW").upper()
     
     # 獲取風險指數歷史
@@ -677,7 +678,7 @@ def main():
                         y=stock_normalized.values,
                         mode='lines',
                         name=f'{compare_stock} (標準化)',
-                        line=dict(color='#ff4d6d', width=2, dash='dash'),
+                        line=dict(color='#E0E0E0', width=2),  # 亮灰色
                         yaxis='y1'
                     ))
         
@@ -695,6 +696,20 @@ def main():
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
         st.plotly_chart(fig_risk, use_container_width=True)
+        
+        # 統計數據
+        avg_risk = risk_history.mean()
+        max_risk = risk_history.max()
+        min_risk = risk_history.min()
+        
+        st.markdown(f"""
+        <div style='text-align:center; color:#c8d8e8; margin-top:10px;'>
+            <span style='font-size:14px;'>📊 統計數據</span><br>
+            <span style='color:#00d4ff;'>平均: {avg_risk:.1f}</span> | 
+            <span style='color:#ff4d6d;'>最高: {max_risk:.1f}</span> | 
+            <span style='color:#00ff9d;'>最低: {min_risk:.1f}</span>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         st.warning("數據不足，無法顯示歷史走勢")
     
