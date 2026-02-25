@@ -363,6 +363,9 @@ def main():
         }
         
         risk = calculate_risk_score(latest_vix, credit_spread_value, fear_greed_value, latest_dxy, latest_usdjpy)
+        
+        # 儲存當天數據到 CSV
+        save_today_data(latest_vix, fear_greed_value, credit_spread_value, latest_dxy, latest_usdjpy, risk['total'])
     
     # 風險等級
     if risk['total'] < 40:
@@ -618,7 +621,7 @@ def main():
         compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, NVDA, SPY, TSM, 2330.TW").upper()
     
     # 獲取風險指數歷史
-    risk_history = get_risk_index_history(period)
+    risk_history = get_risk_index_history_v2(period)
     
     # 獲取股票數據（如果有輸入）
     stock_data = None
@@ -745,3 +748,138 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# ==================== CSV 歷史數據 ====================
+import os
+from datetime import datetime
+
+CSV_FILE = "risk_history.csv"
+
+def get_fear_greed_history_from_csv():
+    """從 CSV 讀取 CNN恐懼/貪戻歷史"""
+    try:
+        if os.path.exists(CSV_FILE):
+            df = pd.read_csv(CSV_FILE)
+            df['date'] = pd.to_datetime(df['date'])
+            df = df.set_index('date')
+            return df
+        return pd.DataFrame()
+    except:
+        return pd.DataFrame()
+
+def save_today_data(vix, fear_greed, credit_spread, dxy, usd_jpy, risk_index):
+    """儲存當天數據到 CSV"""
+    try:
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # 現有數據
+        if os.path.exists(CSV_FILE):
+            df = pd.read_csv(CSV_FILE)
+            df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+            
+            # 檢查今天是否已記錄
+            if today in df['date'].values:
+                # 更新
+                df.loc[df['date'] == today, 'fear_greed'] = fear_greed
+                df.loc[df['date'] == today, 'vix'] = vix
+                df.loc[df['date'] == today, 'credit_spread'] = credit_spread
+                df.loc[df['date'] == today, 'dxy'] = dxy
+                df.loc[df['date'] == today, 'usd_jpy'] = usd_jpy
+                df.loc[df['date'] == today, 'risk_index'] = risk_index
+            else:
+                # 新增
+                new_row = pd.DataFrame([{
+                    'date': today,
+                    'vix': vix,
+                    'fear_greed': fear_greed,
+                    'credit_spread': credit_spread,
+                    'dxy': dxy,
+                    'usd_jpy': usd_jpy,
+                    'risk_index': risk_index
+                }])
+                df = pd.concat([df, new_row], ignore_index=True)
+        else:
+            # 建立新檔案
+            df = pd.DataFrame([{
+                'date': today,
+                'vix': vix,
+                'fear_greed': fear_greed,
+                'credit_spread': credit_spread,
+                'dxy': dxy,
+                'usd_jpy': usd_jpy,
+                'risk_index': risk_index
+            }])
+        
+        df.to_csv(CSV_FILE, index=False)
+        return True
+    except Exception as e:
+        st.error(f"儲存數據失敗: {e}")
+        return False
+
+def get_risk_index_history_v2(period="1y"):
+    """計算綜合風險指數歷史（使用真實 CNN恐懼/貪戻數據）"""
+    try:
+        # 讀取 CSV 中的恐懼/貪戻歷史
+        csv_df = get_fear_greed_history_from_csv()
+        
+        # 獲取其他歷史數據
+        vix_data = yf.download("^VIX", period=period, progress=False)
+        dxy_data = yf.download("DX-Y.NYB", period=period, progress=False)
+        jpy_data = yf.download("JPY=X", period=period, progress=False)
+        
+        def get_close(data):
+            if len(data) == 0:
+                return pd.Series([])
+            if isinstance(data.columns, pd.MultiIndex):
+                close = data['Close'] if 'Close' in data.columns.get_level_values(0) else data.iloc[:, 0]
+                if isinstance(close, pd.DataFrame):
+                    close = close.iloc[:, 0]
+                return close
+            elif 'Close' in data.columns:
+                return data['Close']
+            return data.iloc[:, 0]
+        
+        vix = get_close(vix_data)
+        dxy = get_close(dxy_data)
+        jpy = get_close(jpy_data)
+        
+        # 信用利差
+        try:
+            credit_url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+            credit_df = pd.read_csv(credit_url)
+            credit_df['DATE'] = pd.to_datetime(credit_df['DATE'])
+            credit_df = credit_df.set_index('DATE')
+        except:
+            credit_df = pd.DataFrame()
+        
+        # 對齊數據
+        common_idx = vix.index.intersection(dxy.index).intersection(jpy.index)
+        
+        risk_history = []
+        dates = []
+        
+        for date in common_idx:
+            v = float(vix.loc[date]) if date in vix.index else None
+            d = float(dxy.loc[date]) if date in dxy.index else None
+            j = float(jpy.loc[date]) if date in jpy.index else None
+            
+            c = None
+            if len(credit_df) > 0 and date in credit_df.index:
+                c = float(credit_df.loc[date, 'BAMLH0A0HYM2'])
+            
+            # 從 CSV 讀取恐懼/貪戻，若無則用 50
+            fg = 50
+            if len(csv_df) > 0:
+                date_str = date.strftime('%Y-%m-%d')
+                if date_str in csv_df.index:
+                    fg = csv_df.loc[date_str, 'fear_greed']
+            
+            if v and d and j:
+                risk = calculate_risk_score(v, c, fg, d, j)
+                risk_history.append(risk['total'])
+                dates.append(date)
+        
+        return pd.Series(risk_history, index=dates)
+    except Exception as e:
+        st.error(f"計算風險指數歷史失敗: {e}")
+        return pd.Series([])
