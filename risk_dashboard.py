@@ -336,18 +336,6 @@ def main():
     
     st.markdown("---")
     
-    # 五個指標卡片
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    cols = [col1, col2, col3, col4, col5]
-    indicators = [
-        ('VIX 恐慌指數', risk['raw_vix'], risk['vix'], 'vix'),
-        ('CNN 恐懼/貪澈', risk['raw_fear_greed'], risk['fear_greed'], 'fear_greed'),
-        ('信用利差 %', risk['raw_spread'], risk['credit_spread'], 'credit'),
-        ('美元指數 DXY', risk['raw_dxy'], risk['dollar'], 'dxy'),
-        ('USD/JPY', risk['raw_jpy'], risk['usd_jpy'], 'jpy'),
-    ]
-    
     # 獲取 sparkline 數據
     sparkline_data = get_sparkline_data()
     
@@ -410,8 +398,9 @@ def main():
                     xaxis=dict(visible=False, showgrid=False),
                     yaxis=dict(visible=False, showgrid=False),
                     showlegend=False,
+                    autosize=True,
                 )
-                st.plotly_chart(fig_spark, width='stretch', config={'displayModeBar': False})
+                st.plotly_chart(fig_spark, use_container_width=True, config={'displayModeBar': False})
             else:
                 # 無數據時顯示文字
                 st.markdown(f"<div style='color:#8a9bb0; font-size:11px; text-align:center;'>➖ 無趨勢</div>", unsafe_allow_html=True)
