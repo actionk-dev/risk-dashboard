@@ -528,25 +528,34 @@ def main():
     
     # 歷史圖放下一行
     st.markdown("---")
-    st.subheader(f"📈 {stock_symbol} 與市場風險指數歷史關係")
+    st.subheader("📈 個股與市場風險指數歷史關係")
     
     if len(stock_data) > 0 and len(vix_data) > 0:
-        # 對齊數據
+        # 對齊數據 - 處理 MultiIndex columns
         vix_clean = vix_data.dropna()
         stock_clean = stock_data.dropna()
+        
+        # 轉為 1D array
+        if hasattr(vix_clean, 'values'):
+            if len(vix_clean.shape) > 1:
+                vix_clean = vix_clean.iloc[:, 0]
+        if hasattr(stock_clean, 'values'):
+            if len(stock_clean.shape) > 1:
+                stock_clean = stock_clean.iloc[:, 0]
         
         if len(vix_clean) > 0 and len(stock_clean) > 0:
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=vix_clean.index, y=vix_clean.values, name="VIX", 
-                                    line=dict(color='red'), yaxis='y1'))
+                                    line=dict(color='red', width=2), yaxis='y1'))
             fig.add_trace(go.Scatter(x=stock_clean.index, y=stock_clean.values, name=f"{stock_symbol}", 
-                                    line=dict(color='blue'), yaxis='y2'))
+                                    line=dict(color='#00d4ff', width=2), yaxis='y2'))
             fig.update_layout(
-                xaxis=dict(title="日期", rangeslider=dict(visible=True)),
-                yaxis=dict(title="VIX", side='left'),
-                yaxis2=dict(title=f"{stock_symbol}", overlaying='y', side='right'),
+                xaxis=dict(title="日期", rangeslider=dict(visible=True), color='#c8d8e8'),
+                yaxis=dict(title="VIX", side='left', color='#ff4d6d'),
+                yaxis2=dict(title=f"{stock_symbol}", overlaying='y', side='right', color='#00d4ff'),
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
-                font_color='#c8d8e8', height=350
+                font_color='#c8d8e8', height=350,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
             st.plotly_chart(fig, use_container_width=True)
         else:
