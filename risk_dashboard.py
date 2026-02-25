@@ -24,6 +24,15 @@ st.markdown("""
     section[data-testid="stSidebar"] { background-color: #0f1520; }
     .streamlit-expanderHeader { background-color: #0f1520 !important; color: #c8d8e8 !important; }
     hr { border-color: #1e2d45 !important; }
+    
+    /* 手機平板響應式 */
+    @media (max-width: 768px) {
+        .block-container { padding: 0.5rem !important; }
+        div[data-testid="stColumn"] { min-width: 100% !important; margin-bottom: 8px; }
+        div[data-testid="stVerticalBlock"] { gap: 0.3rem !important; }
+        .stSubheader { font-size: 0.9rem !important; }
+        div[data-testid="stMetricValue"] { font-size: 1.2rem !important; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
