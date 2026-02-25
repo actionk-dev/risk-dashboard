@@ -215,6 +215,10 @@ def main():
         credit_history = get_credit_spread_history(7)
         credit_week_ago = credit_history[0] if credit_history and len(credit_history) > 1 else None
         
+        # 使用真實數據，若獲取失敗則使用預設值
+        fear_greed_value = fear_greed if fear_greed is not None else 50
+        credit_spread_value = credit_spread if credit_spread is not None else 3.0
+        
         # 計算趨勢
         trends = {
             'vix': calculate_trend(latest_vix, vix_week_ago),
@@ -223,10 +227,6 @@ def main():
             'credit': calculate_trend(credit_spread_value, credit_week_ago),
             'fear_greed': (None, "neutral"),  # 無法取得歷史數據
         }
-        
-        # 使用真實數據，若獲取失敗則使用預設值
-        fear_greed_value = fear_greed if fear_greed is not None else 50
-        credit_spread_value = credit_spread if credit_spread is not None else 3.0
         
         risk = calculate_risk_score(latest_vix, credit_spread_value, fear_greed_value, latest_dxy, latest_usdjpy)
     
