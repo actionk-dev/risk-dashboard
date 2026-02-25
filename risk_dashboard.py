@@ -652,7 +652,7 @@ def main():
             y=risk_history.values,
             mode='lines+markers',
             name='綜合風險指數',
-            line=dict(color='#00d4ff', width=3),
+            line=dict(color='#00d4ff', width=3, shape='spline'),
             marker=dict(color=colors, size=3),
             yaxis='y1'
         ))
@@ -687,7 +687,7 @@ def main():
                         y=stock_normalized.values,
                         mode='lines',
                         name=f'{compare_stock} (標準化)',
-                        line=dict(color='#E0E0E0', width=2),  # 亮灰色
+                        line=dict(color='#E0E0E0', width=2, shape='spline'),  # 亮灰色
                         yaxis='y1'
                     ))
         
