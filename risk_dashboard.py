@@ -478,13 +478,13 @@ def main():
             polar=dict(bgcolor='rgba(0,0,0,0)', 
                       radialaxis=dict(visible=True, range=[0, 100], color='#4a6080'),
                       angularaxis=dict(color='#c8d8e8', tickfont=dict(size=10, color='#c8d8e8'))),
-            paper_bgcolor='rgba(0,0,0,0)', font_color='#c8d8e8', height=300
+            paper_bgcolor='rgba(0,0,0,0)', font_color='#c8d8e8', height=380
         )
         st.subheader("風險雷達圖")
         st.plotly_chart(fig_radar, use_container_width=True)
     
     with col_bar:
-        st.subheader("📊 風險指標分數")
+        st.subheader("風險指標分數")
         
         # 柱狀圖（垂直）- 使用各指標燈號顏色（用原始值判斷）
         indicator_names = ['VIX', '恐懼/貪澈', '信用利差', '美元指數', 'USD/JPY']
