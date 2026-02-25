@@ -1,0 +1,13 @@
+[server]
+port = 8501
+headless = true
+
+[theme]
+primaryColor = "#00d4ff"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#c8d8e8"
+font = "sans serif"
+
+[runner]
+magicEnabled = true
