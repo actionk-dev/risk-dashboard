@@ -101,6 +101,21 @@ def get_indicator_history(symbol, days=7):
     except:
         return pd.Series([])
 
+def get_sparkline_data():
+    """獲取所有指標的7天歷史數據用於趨勢圖"""
+    vix_7d = get_indicator_history("^VIX", 7)
+    dxy_7d = get_indicator_history("DX-Y.NYB", 7)
+    jpy_7d = get_indicator_history("JPY=X", 7)
+    credit_7d = get_credit_spread_history(7)
+    
+    return {
+        'vix': vix_7d,
+        'dxy': dxy_7d,
+        'usd_jpy': jpy_7d,
+        'credit': credit_7d,
+        'fear_greed': None,  # 無法取得歷史
+    }
+
 def calculate_trend(current, week_ago):
     """計算趨勢方向：up=紅色向上, down/flat=白色"""
     if current is None or week_ago is None or week_ago == 0:
@@ -324,6 +339,21 @@ def main():
         ('USD/JPY', risk['raw_jpy'], risk['usd_jpy'], 'jpy'),
     ]
     
+    # 獲取 sparkline 數據
+    sparkline_data = get_sparkline_data()
+    
+    # 五個指標卡片
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    cols = [col1, col2, col3, col4, col5]
+    indicators = [
+        ('VIX 恐慌指數', risk['raw_vix'], risk['vix'], 'vix'),
+        ('CNN 恐懼/貪澈', risk['raw_fear_greed'], risk['fear_greed'], 'fear_greed'),
+        ('信用利差 %', risk['raw_spread'], risk['credit_spread'], 'credit'),
+        ('美元指數 DXY', risk['raw_dxy'], risk['dollar'], 'dxy'),
+        ('USD/JPY', risk['raw_jpy'], risk['usd_jpy'], 'jpy'),
+    ]
+    
     for i, (name, value, score, key) in enumerate(indicators):
         with cols[i]:
             # 燈號
@@ -341,97 +371,43 @@ def main():
             unit = '%' if key == 'credit' else ''
             st.metric(f"{light} {name}", f"{value:.2f}{unit}", delta=f"{score:.1f}分", delta_color="inverse")
             
-            # 趨勢顯示（一週）
+            # Sparkline 趨勢圖
             trend_data = trends.get(key, (None, "neutral"))
             change_pct, trend_type = trend_data
             
-            if change_pct is not None:
+            hist_data = sparkline_data.get(key)
+            
+            if hist_data is not None and len(hist_data) > 1:
+                # 決定顏色：紅色=向上，白色=向下/中性
                 if trend_type == "up":
-                    # 紅色向上趨勢
-                    trend_emoji = "↗"
-                    trend_color = "#ff4d6d"
-                    trend_text = f"📈 {change_pct:+.1f}% (一週)"
-                elif trend_type == "down":
-                    # 白色/灰色向下趨勢
-                    trend_emoji = "↘"
-                    trend_color = "#8a9bb0"
-                    trend_text = f"📉 {change_pct:+.1f}% (一週)"
+                    line_color = "#ff4d6d"  # 紅色
                 else:
-                    # 中性/無明顯趨勢
-                    trend_emoji = "→"
-                    trend_color = "#8a9bb0"
-                    trend_text = f"➖ {change_pct:+.1f}% (一週)"
+                    line_color = "#8a9bb0"  # 白色/灰色
                 
-                st.markdown(f"<div style='color:{trend_color}; font-size:12px; margin-top:-10px;'>{trend_emoji} {trend_text}</div>", unsafe_allow_html=True)
+                fig_spark = go.Figure()
+                fig_spark.add_trace(go.Scatter(
+                    x=list(range(len(hist_data))),
+                    y=hist_data.values,
+                    mode="lines",
+                    line=dict(color=line_color, width=2),
+                    fill='tozeroy',
+                    fillcolor=f"rgba({int(line_color[1:3],16)},{int(line_color[3:5],16)},{int(line_color[5:7],16)},0.1)"
+                ))
+                fig_spark.update_layout(
+                    height=60,
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    xaxis=dict(visible=False, showgrid=False),
+                    yaxis=dict(visible=False, showgrid=False),
+                    showlegend=False,
+                )
+                st.plotly_chart(fig_spark, width='stretch', config={'displayModeBar': False})
             else:
-                st.markdown(f"<div style='color:#8a9bb0; font-size:12px; margin-top:-10px;'>➖ 無趨勢數據</div>", unsafe_allow_html=True)
+                # 無數據時顯示文字
+                st.markdown(f"<div style='color:#8a9bb0; font-size:11px; text-align:center;'>➖ 無趨勢</div>", unsafe_allow_html=True)
             
             st.caption(INDICATOR_DESC.get(key, ''))
-    
-    st.markdown("---")
-    
-    # 一週趨勢走勢圖
-    st.subheader("📊 一週指數趨勢走勢")
-    
-    # 獲取各指標歷史數據
-    vix_7d = get_indicator_history("^VIX", 7)
-    dxy_7d = get_indicator_history("DX-Y.NYB", 7)
-    jpy_7d = get_indicator_history("JPY=X", 7)
-    credit_7d = get_credit_spread_history(7)
-    
-    if vix_7d is not None and len(vix_7d) > 1:
-        fig_trend = go.Figure()
-        
-        # VIX - 紅色上漲趨勢, 白色/灰色下跌
-        if trends['vix'][1] == "up":
-            vix_color = "#ff4d6d"
-        else:
-            vix_color = "#8a9bb0"
-        fig_trend.add_trace(go.Scatter(
-            x=list(range(len(vix_7d))), y=vix_7d.values,
-            name="VIX", mode="lines+markers",
-            line=dict(color=vix_color, width=2),
-            marker=dict(size=6)
-        ))
-        
-        # DXY
-        if trends['dxy'][1] == "up":
-            dxy_color = "#ff4d6d"
-        else:
-            dxy_color = "#8a9bb0"
-        fig_trend.add_trace(go.Scatter(
-            x=list(range(len(dxy_7d))), y=dxy_7d.values,
-            name="美元指數 DXY", mode="lines+markers",
-            line=dict(color=dxy_color, width=2),
-            marker=dict(size=6)
-        ))
-        
-        # USD/JPY
-        if trends['usd_jpy'][1] == "up":
-            jpy_color = "#ff4d6d"
-        else:
-            jpy_color = "#8a9bb0"
-        fig_trend.add_trace(go.Scatter(
-            x=list(range(len(jpy_7d))), y=jpy_7d.values,
-            name="USD/JPY", mode="lines+markers",
-            line=dict(color=jpy_color, width=2),
-            marker=dict(size=6)
-        ))
-        
-        fig_trend.update_layout(
-            xaxis_title="天數 (過去7天)",
-            yaxis_title="指數值",
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            font_color='#c8d8e8',
-            height=300,
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            xaxis=dict(showgrid=True, gridcolor='#1e2d45'),
-            yaxis=dict(showgrid=True, gridcolor='#1e2d45'),
-        )
-        st.plotly_chart(fig_trend, width='stretch')
-    else:
-        st.warning("無法載入趨勢數據")
     
     st.markdown("---")
     
