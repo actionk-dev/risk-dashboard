@@ -83,7 +83,14 @@ jobs:
 
           # Get VIX
           vix = yf.download("^VIX", progress=False)
-          latest_vix = float(vix['Close'].iloc[-1]) if len(vix) > 0 else 18
+          if len(vix) > 0:
+              vix_close = vix['Close']
+              if hasattr(vix_close, 'iloc'):
+                  latest_vix = float(vix_close.iloc[-1])
+              else:
+                  latest_vix = float(vix_close)
+          else:
+              latest_vix = 18
 
           # Get Fear/Greed
           fear_greed = 50
@@ -108,11 +115,25 @@ jobs:
 
           # Get DXY
           dxy = yf.download("DX-Y.NYB", progress=False)
-          latest_dxy = float(dxy['Close'].iloc[-1]) if len(dxy) > 0 else 100
+          if len(dxy) > 0:
+              dxy_close = dxy['Close']
+              if hasattr(dxy_close, 'iloc'):
+                  latest_dxy = float(dxy_close.iloc[-1])
+              else:
+                  latest_dxy = float(dxy_close)
+          else:
+              latest_dxy = 100
 
           # Get USD/JPY
           jpy = yf.download("JPY=X", progress=False)
-          latest_jpy = float(jpy['Close'].iloc[-1]) if len(jpy) > 0 else 150
+          if len(jpy) > 0:
+              jpy_close = jpy['Close']
+              if hasattr(jpy_close, 'iloc'):
+                  latest_jpy = float(jpy_close.iloc[-1])
+              else:
+                  latest_jpy = float(jpy_close)
+          else:
+              latest_jpy = 150
 
           # Calculate risk
           risk = calculate_risk_score(latest_vix, credit_spread, fear_greed, latest_dxy, latest_jpy)
