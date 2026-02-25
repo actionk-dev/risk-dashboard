@@ -605,7 +605,7 @@ def main():
                               index=3, 
                               label_visibility="collapsed")
     with col_stock:
-        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)  # 對齊間距
+        st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)  # 對齊間距
         compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, NVDA, SPY, TSM, 2330.TW").upper()
     
     # 獲取風險指數歷史
