@@ -732,6 +732,83 @@ def main():
     else:
         st.warning("數據不足，無法顯示歷史走勢")
     
+    # 一週風險指數趨勢圖（使用真實數據）
+    st.markdown("---")
+    st.subheader("📉 一週風險指數趨勢")
+    
+    try:
+        # 讀取 CSV 中的真實數據
+        csv_df = get_fear_greed_history_from_csv()
+        
+        if len(csv_df) > 0:
+            # 獲取最近一週的數據
+            import datetime
+            today = datetime.datetime.now()
+            week_ago = today - datetime.timedelta(days=7)
+            
+            # 過濾最近一週
+            recent_data = csv_df[csv_df.index >= week_ago]
+            
+            if len(recent_data) > 0:
+                # 重新計算風險指數（使用真實的 fear_greed）
+                weekly_risk = []
+                for idx, row in recent_data.iterrows():
+                    risk = calculate_risk_score(
+                        row.get('vix', 18),
+                        row.get('credit_spread', 3.0),
+                        row.get('fear_greed', 50),
+                        row.get('dxy', 100),
+                        row.get('usd_jpy', 150)
+                    )
+                    weekly_risk.append({
+                        'date': idx,
+                        'risk_index': risk['total']
+                    })
+                
+                if weekly_risk:
+                    weekly_df = pd.DataFrame(weekly_risk)
+                    weekly_df = weekly_df.set_index('date')
+                    
+                    # 繪製一週趨勢圖
+                    fig_weekly = go.Figure()
+                    fig_weekly.add_trace(go.Scatter(
+                        x=weekly_df.index,
+                        y=weekly_df['risk_index'],
+                        mode='lines+markers',
+                        name='風險指數',
+                        line=dict(color='#00d4ff', width=3),
+                        marker=dict(size=8, color='#00d4ff')
+                    ))
+                    
+                    fig_weekly.update_layout(
+                        xaxis=dict(title="日期", color='#c8d8e8'),
+                        yaxis=dict(title="風險指數", range=[0, 100], color='#c8d8e8', showgrid=True, gridcolor='#1e2d45'),
+                        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                        font_color='#c8d8e8', height=250,
+                        margin=dict(l=20, r=20, t=20, b=20)
+                    )
+                    st.plotly_chart(fig_weekly, use_container_width=True)
+                    
+                    # 顯示一週統計
+                    avg_week = weekly_df['risk_index'].mean()
+                    max_week = weekly_df['risk_index'].max()
+                    min_week = weekly_df['risk_index'].min()
+                    st.markdown(f"""
+                    <div style='text-align:center; color:#c8d8e8; font-size:13px;'>
+                        <span>平均: {avg_week:.1f}</span> | 
+                        <span>最高: {max_week:.1f}</span> | 
+                        <span>最低: {min_week:.1f}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.info("一週內尚無完整數據")
+            else:
+                st.info("一週內尚無足夠數據，請持續記錄以建立歷史")
+        else:
+            st.info("尚無歷史數據，請先啟用 app 以建立記錄")
+    except Exception as e:
+        st.error(f"載入一週數據失敗: {e}")
+    
     st.markdown("---")
     
     # 數據來源資訊
