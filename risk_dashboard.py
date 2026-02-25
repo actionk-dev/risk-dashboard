@@ -210,6 +210,71 @@ def calculate_risk_score(vix, credit_spread, fear_greed, dxy, usd_jpy):
             'raw_vix': vix or 20, 'raw_spread': credit_spread or 3, 
             'raw_fear_greed': fear_greed or 50, 'raw_dxy': dxy or 100, 'raw_jpy': usd_jpy or 150}
 
+@st.cache_data(ttl=3600)
+def get_risk_index_history(period="1y"):
+    """計算綜合風險指數歷史"""
+    try:
+        # 獲取所有需要的數據
+        vix_data = yf.download("^VIX", period=period, progress=False)
+        dxy_data = yf.download("^DXY", period=period, progress=False)  # 使用 ^DXY
+        jpy_data = yf.download("JPY=X", period=period, progress=False)
+        
+        # 處理 MultiIndex
+        def get_close(data):
+            if len(data) == 0:
+                return pd.Series([])
+            if isinstance(data.columns, pd.MultiIndex):
+                close = data['Close'] if 'Close' in data.columns.get_level_values(0) else data.iloc[:, 0]
+                if isinstance(close, pd.DataFrame):
+                    close = close.iloc[:, 0]
+                return close
+            elif 'Close' in data.columns:
+                return data['Close']
+            return data.iloc[:, 0]
+        
+        vix = get_close(vix_data)
+        dxy = get_close(dxy_data)
+        jpy = get_close(jpy_data)
+        
+        # 信用利差
+        try:
+            credit_url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+            credit_df = pd.read_csv(credit_url)
+            credit_df['DATE'] = pd.to_datetime(credit_df['DATE'])
+            credit_df = credit_df.set_index('DATE')
+        except:
+            credit_df = pd.DataFrame()
+        
+        # 對齊數據
+        common_idx = vix.index.intersection(dxy.index).intersection(jpy.index)
+        
+        risk_history = []
+        dates = []
+        
+        for date in common_idx:
+            # 取得當天數據
+            v = float(vix.loc[date]) if date in vix.index else None
+            d = float(dxy.loc[date]) if date in dxy.index else None
+            j = float(jpy.loc[date]) if date in jpy.index else None
+            
+            # 信用利差
+            c = None
+            if len(credit_df) > 0 and date in credit_df.index:
+                c = float(credit_df.loc[date, 'BAMLH0A0HYM2'])
+            
+            # 恐懼/貪澈用50（無法取得歷史）
+            fg = 50
+            
+            if v and d and j:
+                risk = calculate_risk_score(v, c, fg, d, j)
+                risk_history.append(risk['total'])
+                dates.append(date)
+        
+        return pd.Series(risk_history, index=dates)
+    except Exception as e:
+        st.error(f"計算風險指數歷史失敗: {e}")
+        return pd.Series([])
+
 # ==================== 指標說明 ====================
 INDICATOR_DESC = {
     'vix': '市場對未來30天波動的預期',
@@ -528,38 +593,59 @@ def main():
     
     # 歷史圖放下一行
     st.markdown("---")
-    st.subheader("📈 個股與市場風險指數歷史關係")
+    st.subheader("📈 綜合風險指數歷史")
     
-    if len(stock_data) > 0 and len(vix_data) > 0:
-        # 對齊數據 - 處理 MultiIndex columns
-        vix_clean = vix_data.dropna()
-        stock_clean = stock_data.dropna()
+    # 時間區間選擇
+    col_period1, col_period2 = st.columns([1, 4])
+    with col_period1:
+        period = st.selectbox("選擇時間區間", 
+                              ["1mo", "3mo", "6mo", "1y", "2y", "5y"], 
+                              index=3, 
+                              label_visibility="collapsed")
+    
+    # 獲取風險指數歷史
+    risk_history = get_risk_index_history(period)
+    
+    if len(risk_history) > 0:
+        # 根據風險等級設定顏色
+        def get_risk_color(value):
+            if value < 40:
+                return '#00ff9d'  # 綠色
+            elif value < 60:
+                return '#ffb347'  # 黃色
+            elif value < 80:
+                return '#ff8c00'  # 橘色
+            else:
+                return '#ff4d6d'  # 紅色
         
-        # 轉為 1D array
-        if hasattr(vix_clean, 'values'):
-            if len(vix_clean.shape) > 1:
-                vix_clean = vix_clean.iloc[:, 0]
-        if hasattr(stock_clean, 'values'):
-            if len(stock_clean.shape) > 1:
-                stock_clean = stock_clean.iloc[:, 0]
+        # 創建彩色漸變
+        colors = [get_risk_color(v) for v in risk_history.values]
         
-        if len(vix_clean) > 0 and len(stock_clean) > 0:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=vix_clean.index, y=vix_clean.values, name="VIX", 
-                                    line=dict(color='red', width=2), yaxis='y1'))
-            fig.add_trace(go.Scatter(x=stock_clean.index, y=stock_clean.values, name=f"{stock_symbol}", 
-                                    line=dict(color='#00d4ff', width=2), yaxis='y2'))
-            fig.update_layout(
-                xaxis=dict(title="日期", rangeslider=dict(visible=True), color='#c8d8e8'),
-                yaxis=dict(title="VIX", side='left', color='#ff4d6d'),
-                yaxis2=dict(title=f"{stock_symbol}", overlaying='y', side='right', color='#00d4ff'),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
-                font_color='#c8d8e8', height=350,
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.warning("數據不足，無法顯示歷史走勢")
+        fig_risk = go.Figure()
+        fig_risk.add_trace(go.Scatter(
+            x=risk_history.index, 
+            y=risk_history.values,
+            mode='lines+markers',
+            line=dict(color='#00d4ff', width=2),
+            marker=dict(color=colors, size=4),
+            fill='tozeroy',
+            fillcolor='rgba(0, 212, 255, 0.1)'
+        ))
+        
+        # 添加風險區間背景
+        fig_risk.add_hrect(y0=0, y1=40, fillcolor="rgba(0,255,157,0.1)", line_width=0, annotation_text="低風險", annotation_position="top left")
+        fig_risk.add_hrect(y0=40, y1=60, fillcolor="rgba(255,179,71,0.1)", line_width=0, annotation_text="中等", annotation_position="top left")
+        fig_risk.add_hrect(y0=60, y1=80, fillcolor="rgba(255,140,0,0.1)", line_width=0, annotation_text="高風險", annotation_position="top left")
+        fig_risk.add_hrect(y0=80, y1=100, fillcolor="rgba(255,77,109,0.1)", line_width=0, annotation_text="極高", annotation_position="top left")
+        
+        fig_risk.update_layout(
+            xaxis=dict(title="日期", rangeslider=dict(visible=True), color='#c8d8e8'),
+            yaxis=dict(title="風險指數", range=[0, 100], color='#c8d8e8', showgrid=True, gridcolor='#1e2d45'),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
+            font_color='#c8d8e8', height=350,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_risk, use_container_width=True)
     else:
         st.warning("數據不足，無法顯示歷史走勢")
     
