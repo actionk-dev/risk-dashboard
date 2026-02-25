@@ -596,10 +596,10 @@ def main():
     st.markdown("---")
     st.subheader("📈 綜合風險指數歷史")
     
-    # 時間區間和股票代碼選擇
+    # 時間區間和股票代碼選擇（對齊）
     col_period1, col_stock = st.columns([1, 2])
     with col_period1:
-        st.caption("時間範圍")
+        st.markdown("<span style='color:#c8d8e8; font-size:14px;'>時間範圍</span>", unsafe_allow_html=True)
         period = st.selectbox("選擇時間區間", 
                               ["1mo", "3mo", "6mo", "1y", "2y", "5y"], 
                               index=3, 
