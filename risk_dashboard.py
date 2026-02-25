@@ -90,6 +90,50 @@ def get_stock_data(symbol, period="1y"):
     except:
         return pd.Series([])
 
+@st.cache_data(ttl=3600)
+def get_indicator_history(symbol, days=7):
+    """獲取指標過去N天的歷史數據"""
+    try:
+        data = yf.download(symbol, period=f"{days}d", progress=False)
+        if len(data) > 0 and 'Close' in data.columns:
+            return data['Close']
+        return pd.Series([])
+    except:
+        return pd.Series([])
+
+def calculate_trend(current, week_ago):
+    """計算趨勢方向：up=紅色向上, down/flat=白色"""
+    if current is None or week_ago is None or week_ago == 0:
+        return None, "neutral"
+    
+    change_pct = ((current - week_ago) / week_ago) * 100
+    
+    # 超過 2% 視為明顯趨勢
+    if change_pct > 2:
+        return change_pct, "up"
+    elif change_pct < -2:
+        return change_pct, "down"
+    else:
+        return change_pct, "neutral"
+
+def get_fear_greed_history():
+    """嘗試獲取過去7天的恐懼/貪澈指數歷史（需要付費API，這裡用多次請求模擬）"""
+    # 目前只能取得最新值，歷史資料需要付費 API
+    return None
+
+@st.cache_data(ttl=3600)
+def get_credit_spread_history(days=7):
+    """獲取信用利差歷史數據"""
+    try:
+        url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+        df = pd.read_csv(url)
+        if len(df) > days:
+            # 取得最近 days 天的數據
+            return df.iloc[-days:]['BAMLH0A0HYM2'].tolist()
+        return None
+    except:
+        return None
+
 # ==================== 風險評分計算 ====================
 def calculate_risk_score(vix, credit_spread, fear_greed, dxy, usd_jpy):
     vix_score = min(100, max(0, (vix / 40) * 100)) if vix else 50
@@ -163,6 +207,22 @@ def main():
         
         latest_dxy = float(dxy_data.iloc[-1]) if len(dxy_data) > 0 else 102.0
         latest_usdjpy = float(usdjpy_data.iloc[-1]) if len(usdjpy_data) > 0 else 150.0
+        
+        # 獲取一週前的數據用於趨勢計算
+        vix_week_ago = float(vix_data.iloc[0]) if len(vix_data) > 1 else None
+        dxy_week_ago = float(dxy_data.iloc[0]) if len(dxy_data) > 1 else None
+        usdjpy_week_ago = float(usdjpy_data.iloc[0]) if len(usdjpy_data) > 1 else None
+        credit_history = get_credit_spread_history(7)
+        credit_week_ago = credit_history[0] if credit_history and len(credit_history) > 1 else None
+        
+        # 計算趨勢
+        trends = {
+            'vix': calculate_trend(latest_vix, vix_week_ago),
+            'dxy': calculate_trend(latest_dxy, dxy_week_ago),
+            'usd_jpy': calculate_trend(latest_usdjpy, usdjpy_week_ago),
+            'credit': calculate_trend(credit_spread_value, credit_week_ago),
+            'fear_greed': (None, "neutral"),  # 無法取得歷史數據
+        }
         
         # 使用真實數據，若獲取失敗則使用預設值
         fear_greed_value = fear_greed if fear_greed is not None else 50
@@ -280,6 +340,32 @@ def main():
             
             unit = '%' if key == 'credit' else ''
             st.metric(f"{light} {name}", f"{value:.2f}{unit}", delta=f"{score:.1f}分", delta_color="inverse")
+            
+            # 趨勢顯示（一週）
+            trend_data = trends.get(key, (None, "neutral"))
+            change_pct, trend_type = trend_data
+            
+            if change_pct is not None:
+                if trend_type == "up":
+                    # 紅色向上趨勢
+                    trend_emoji = "↗"
+                    trend_color = "#ff4d6d"
+                    trend_text = f"📈 {change_pct:+.1f}% (一週)"
+                elif trend_type == "down":
+                    # 白色/灰色向下趨勢
+                    trend_emoji = "↘"
+                    trend_color = "#8a9bb0"
+                    trend_text = f"📉 {change_pct:+.1f}% (一週)"
+                else:
+                    # 中性/無明顯趨勢
+                    trend_emoji = "→"
+                    trend_color = "#8a9bb0"
+                    trend_text = f"➖ {change_pct:+.1f}% (一週)"
+                
+                st.markdown(f"<div style='color:{trend_color}; font-size:12px; margin-top:-10px;'>{trend_emoji} {trend_text}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div style='color:#8a9bb0; font-size:12px; margin-top:-10px;'>➖ 無趨勢數據</div>", unsafe_allow_html=True)
+            
             st.caption(INDICATOR_DESC.get(key, ''))
     
     st.markdown("---")
