@@ -55,12 +55,11 @@ def get_fear_greed_index():
         headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
         response = requests.get("https://feargreedmeter.com/", headers=headers, timeout=10)
         if response.status_code == 200:
-            # 找數字: "43" 之類的值
-            match = re.search(r'/fear-and-greed-index["\s]*>\s*(\d+)\s*<', response.text)
+            # 嘗試多種匹配方式
+            match = re.search(r'>(\d+)<.*?fear.*?greed', response.text, re.IGNORECASE)
             if match:
                 return int(match.group(1))
-            # 備用方式
-            match = re.search(r'"fearGreedIndex"\s*:\s*(\d+)', response.text)
+            match = re.search(r'fear.*?greed.*?>(\d+)<', response.text, re.IGNORECASE)
             if match:
                 return int(match.group(1))
         return None
@@ -69,16 +68,16 @@ def get_fear_greed_index():
 
 @st.cache_data(ttl=3600)
 def get_credit_spread():
-    """從 FRED 獲取信用利差 (BAMLH0A0HYM2)"""
+    """從 FRED 獲取信用利差 (BAMLH0A0HYM2) - 使用直接 HTTP 請求"""
     try:
-        # 使用 pandas_datareader 從 FRED 獲取
-        from pandas_datareader import data as web
-        df = web.DataReader('BAMLH0A0HYM2', 'fred')
+        # 直接從 FRED API 獲取（無需 API key 的公開數據）
+        url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+        df = pd.read_csv(url)
         if len(df) > 0:
-            return float(df.iloc[-1]['BAMLH0A0HYM2'])
+            latest = df.iloc[-1]
+            return float(latest['BAMLH0A0HYM2'])
         return None
     except Exception as e:
-        st.warning(f"FRED 數據獲取失敗: {e}")
         return None
 
 @st.cache_data(ttl=3600)
