@@ -216,7 +216,7 @@ def get_risk_index_history(period="1y"):
     try:
         # 獲取所有需要的數據
         vix_data = yf.download("^VIX", period=period, progress=False)
-        dxy_data = yf.download("^DXY", period=period, progress=False)  # 使用 ^DXY
+        dxy_data = yf.download("DX-Y.NYB", period=period, progress=False)  # 美元指數
         jpy_data = yf.download("JPY=X", period=period, progress=False)
         
         # 處理 MultiIndex
