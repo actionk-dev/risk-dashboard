@@ -381,10 +381,15 @@ def main():
                 else:
                     line_color = "#8a9bb0"  # 白色/灰色
                 
+                # 轉為百分比變化（相對於第一天）
+                y_values = [float(x) for x in hist_data.values.flatten()] if len(hist_data.shape) > 1 else [float(x) for x in hist_data.values]
+                base_value = y_values[0]
+                y_pct = [(v - base_value) / base_value * 100 for v in y_values]
+                
                 fig_spark = go.Figure()
                 fig_spark.add_trace(go.Scatter(
-                    x=list(range(len(hist_data))),
-                    y=[float(x) for x in hist_data.values.flatten()] if len(hist_data.shape) > 1 else [float(x) for x in hist_data.values],
+                    x=list(range(len(y_pct))),
+                    y=y_pct,
                     mode="lines",
                     line=dict(color=line_color, width=2),
                     fill='tozeroy',
@@ -396,7 +401,7 @@ def main():
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     xaxis=dict(visible=False, showgrid=False),
-                    yaxis=dict(visible=False, showgrid=False),
+                    yaxis=dict(visible=False, showgrid=False, range=[min(y_pct)-0.5, max(y_pct)+0.5]),
                     showlegend=False,
                     autosize=True,
                 )
