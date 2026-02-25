@@ -95,8 +95,17 @@ def get_indicator_history(symbol, days=7):
     """獲取指標過去N天的歷史數據"""
     try:
         data = yf.download(symbol, period=f"{days}d", progress=False)
-        if len(data) > 0 and 'Close' in data.columns:
-            return data['Close']
+        if len(data) > 0:
+            # 處理 MultiIndex columns
+            if isinstance(data.columns, pd.MultiIndex):
+                # 取得 Close 欄位（可能是 ('Close', symbol) 格式）
+                close = data['Close'] if 'Close' in data.columns.get_level_values(0) else data.iloc[:, 0]
+                if isinstance(close, pd.DataFrame):
+                    close = close.iloc[:, 0]  # 取第一個 Close 欄位
+                return close
+            elif 'Close' in data.columns:
+                return data['Close']
+            return data.iloc[:, 0]  # fallback: 取第一欄
         return pd.Series([])
     except:
         return pd.Series([])
