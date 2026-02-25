@@ -67,6 +67,30 @@ def get_fear_greed_index():
         return None
 
 @st.cache_data(ttl=3600)
+def get_fear_greed_history():
+    """從 feargreedmeter.com 獲取恐懼/貪澈指數歷史數據"""
+    try:
+        import json
+        import re
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+        response = requests.get("https://feargreedmeter.com/", headers=headers, timeout=10)
+        if response.status_code == 200:
+            # 解析 __NEXT_DATA__ JSON
+            match = re.search(r'<script id="__NEXT_DATA__"[^>]*>([^<]+)</script>', response.text)
+            if match:
+                data = json.loads(match.group(1))
+                fgi = data['props']['pageProps']['data']['fgi']['latest']
+                return {
+                    'now': fgi.get('now'),
+                    'yesterday': fgi.get('previous_close'),
+                    'one_week_ago': fgi.get('one_week_ago'),
+                    'one_month_ago': fgi.get('one_month_ago'),
+                }
+        return None
+    except:
+        return None
+
+@st.cache_data(ttl=3600)
 def get_credit_spread():
     """從 FRED 獲取信用利差 (BAMLH0A0HYM2) - 使用直接 HTTP 請求"""
     try:
@@ -116,13 +140,29 @@ def get_sparkline_data():
     dxy_7d = get_indicator_history("DX-Y.NYB", 7)
     jpy_7d = get_indicator_history("JPY=X", 7)
     credit_7d = get_credit_spread_history(7)
+    fear_greed_history = get_fear_greed_history()
+    
+    # 將 fear_greed 轉為 Series（4個點：1月前、1週前、昨日、今日）
+    import pandas as pd
+    fear_greed_series = None
+    if fear_greed_history:
+        values = [
+            fear_greed_history.get('one_month_ago'),
+            fear_greed_history.get('one_week_ago'),
+            fear_greed_history.get('yesterday'),
+            fear_greed_history.get('now'),
+        ]
+        # 只保留有效的值
+        values = [v for v in values if v is not None]
+        if values:
+            fear_greed_series = pd.Series(values)
     
     return {
         'vix': vix_7d,
         'dxy': dxy_7d,
         'usd_jpy': jpy_7d,
         'credit': credit_7d,
-        'fear_greed': None,  # 無法取得歷史
+        'fear_greed': fear_greed_series,
     }
 
 def calculate_trend(current, week_ago):
