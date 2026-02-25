@@ -346,18 +346,23 @@ def main():
         elif risk['raw_fear_greed'] <= 45:
             st.warning(f"**恐懼/貪澈**: {risk['raw_fear_greed']:.0f} — 市場偏向恐懼")
         
-        # 美元+日幣綜合
-        dxy_high = risk['raw_dxy'] >= 105
-        jpy_high = risk['raw_jpy'] >= 145
+        # 美元+日幣綜合（根據趨勢判斷）
+        dxy_trend = trends.get('dxy', (0, 'neutral'))[1]
+        jpy_trend = trends.get('usd_jpy', (0, 'neutral'))[1]
         
-        if dxy_high and not jpy_high:
-            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 全球避險 + 套利交易平倉，壓力最大")
-        elif not dxy_high and not jpy_high:
-            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 日幣套利平倉，針對性風險")
-        elif dxy_high and jpy_high:
-            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 美元強勢，對新興市場和商品不利")
+        # 判斷組合趨勢
+        if dxy_trend == "up" and jpy_trend == "down":
+            # DXY 上漲 + USD/JPY 下跌 = 日圓升值 + 美元強 = 壓力最大
+            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 全球避險 + 日圓套利同時平倉，壓力最大 🔴")
+        elif dxy_trend == "down" and jpy_trend == "down":
+            # DXY 下跌 + USD/JPY 下跌 = 日圓升值 = 純日圓套利平倉
+            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 純粹日圓套利平倉驅動，針對性風險 🟡")
+        elif dxy_trend == "up" and jpy_trend == "up":
+            # 兩者同向上漲 = 美元全面強勢
+            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 美元全面強勢，對新興市場和商品不利 🟠")
         else:
-            st.success(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 美元溫和，日幣套利正常")
+            # 中性或其他組合
+            st.success(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 趨勢不明顯或無趨勢 🟢")
         
         # 總體建議
         if risk['total'] < 40:
