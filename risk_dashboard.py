@@ -347,27 +347,30 @@ def main():
             st.warning(f"**恐懼/貪澈**: {risk['raw_fear_greed']:.0f} — 市場偏向恐懼")
         
         # 美元+日幣綜合（根據趨勢判斷）
-        dxy_trend = trends.get('dxy', (0, 'neutral'))[1]
-        jpy_trend = trends.get('usd_jpy', (0, 'neutral'))[1]
+        dxy_trend_val, dxy_trend = trends.get('dxy', (0, 'neutral'))
+        jpy_trend_val, jpy_trend = trends.get('usd_jpy', (0, 'neutral'))
+        
+        # 趨勢箭頭
+        dxy_arrow = "↗" if dxy_trend == "up" else "↘" if dxy_trend == "down" else "→"
+        jpy_arrow = "↗" if jpy_trend == "up" else "↘" if jpy_trend == "down" else "→"
         
         # 判斷組合趨勢
-        scenario_name = ""
         if dxy_trend == "up" and jpy_trend == "down":
             # DXY 上漲 + USD/JPY 下跌 = 日圓升值 + 美元強 = 壓力最大
             scenario_name = "🔴 全球避險 + 日圓套利同時平倉"
-            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — {scenario_name}，壓力最大")
+            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} {dxy_arrow} + USD/JPY {risk['raw_jpy']:.2f} {jpy_arrow} — {scenario_name}，壓力最大")
         elif dxy_trend == "down" and jpy_trend == "down":
             # DXY 下跌 + USD/JPY 下跌 = 日圓升值 = 純日圓套利平倉
             scenario_name = "🟠 純粹日圓套利平倉"
-            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — {scenario_name}驅動，針對性風險")
+            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} {dxy_arrow} + USD/JPY {risk['raw_jpy']:.2f} {jpy_arrow} — {scenario_name}驅動，針對性風險")
         elif dxy_trend == "up" and jpy_trend == "up":
             # 兩者同向上漲 = 美元全面強勢
             scenario_name = "🟡 美元全面強勢"
-            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — {scenario_name}，對新興市場和商品不利")
+            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} {dxy_arrow} + USD/JPY {risk['raw_jpy']:.2f} {jpy_arrow} — {scenario_name}，對新興市場和商品不利")
         else:
             # 中性或其他組合
             scenario_name = "🟢 趨勢不明顯"
-            st.success(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — {scenario_name}或無趨勢")
+            st.success(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} {dxy_arrow} + USD/JPY {risk['raw_jpy']:.2f} {jpy_arrow} — {scenario_name}或無趨勢")
         
         # 總體建議
         if risk['total'] < 40:
