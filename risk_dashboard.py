@@ -58,7 +58,7 @@ def get_vix_data(period="1y"):
 
 @st.cache_data(ttl=900)
 def get_fear_greed_index():
-    """從 feargreedmeter.com 獲取 CNN 恐懼/貪婪指數"""
+    """從 feargreedmeter.com 獲取 恐懼/貪婪指數"""
     try:
         import re
         headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
@@ -77,7 +77,7 @@ def get_fear_greed_index():
 
 @st.cache_data(ttl=3600)
 def get_fear_greed_history():
-    """從 feargreedmeter.com 獲取CNN恐懼貪淨指數歷史數據"""
+    """從 feargreedmeter.com 獲取恐懼/貪婪指數歷史數據"""
     try:
         import json
         import re
@@ -271,7 +271,7 @@ def get_risk_index_history(period="1y"):
             if len(credit_df) > 0 and date in credit_df.index:
                 c = float(credit_df.loc[date, 'BAMLH0A0HYM2'])
             
-            # CNN恐懼貪淨用50（無法取得歷史）
+            # 恐懼/貪婪用50（無法取得歷史）
             fg = 50
             
             if v and d and j:
@@ -305,7 +305,7 @@ def main():
         
         st.subheader("權重分配")
         st.write(f"- VIX: {WEIGHTS['vix']*100:.0f}%")
-        st.write(f"- CNN恐懼貪淨: {WEIGHTS['fear_greed']*100:.0f}%")
+        st.write(f"- 恐懼/貪婪: {WEIGHTS['fear_greed']*100:.0f}%")
         st.write(f"- 信用利差: {WEIGHTS['credit_spread']*100:.0f}%")
         st.write(f"- 美元指數: {WEIGHTS['dollar']*100:.0f}%")
         st.write(f"- USD/JPY: {WEIGHTS['usd_jpy']*100:.0f}%")
@@ -313,7 +313,7 @@ def main():
         # 評分標準
         with st.expander("📋 評分標準", expanded=False):
             st.write("**VIX** 🟢 <15 | 🟡 15-25 | 🟠 25-35 | 🔴 >35")
-            st.write("**CNN恐懼貪淨** 🟢 0-25 | 🟡 25-45 | ⚪ 45-55 | 🟠 55-75 | 🔴 75-100")
+            st.write("**恐懼/貪婪** 🟢 0-25 | 🟡 25-45 | ⚪ 45-55 | 🟠 55-75 | 🔴 75-100")
             st.write("**信用利差** 🟢 <2% | 🟡 2-3% | 🟠 3-4% | 🔴 >4%")
             st.write("**美元指數** 🟢 <100 | 🟡 100-105 | 🟠 105-110 | 🔴 >110")
             st.write("**USD/JPY** 🟢 <130 | 🟡 130-145 | 🟠 145-160 | 🔴 >160")
@@ -413,13 +413,13 @@ def main():
         else:
             st.success(f"**VIX**: {risk['raw_vix']:.2f} — 市場相對平靜")
         
-        # CNN恐懼貪淨
+        # 恐懼/貪婪
         if risk['raw_fear_greed'] >= 75:
-            st.error(f"**CNN恐懼貪淨**: {risk['raw_fear_greed']:.0f} — 市場過度貪淨")
+            st.error(f"**恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場過度貪婪")
         elif risk['raw_fear_greed'] <= 25:
-            st.error(f"**CNN恐懼貪淨**: {risk['raw_fear_greed']:.0f} — 市場極度恐懼")
+            st.error(f"**恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場極度恐懼")
         elif risk['raw_fear_greed'] <= 45:
-            st.warning(f"**CNN恐懼貪淨**: {risk['raw_fear_greed']:.0f} — 市場偏向恐懼")
+            st.warning(f"**恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場偏向恐懼")
         
         # 美元+日幣綜合（根據趨勢判斷）
         dxy_trend_val, dxy_trend = trends.get('dxy', (0, 'neutral'))
@@ -468,7 +468,7 @@ def main():
     cols = [col1, col2, col3, col4, col5]
     indicators = [
         ('VIX 恐慌指數', risk['raw_vix'], risk['vix'], 'vix'),
-        ('CNN CNN恐懼貪淨', risk['raw_fear_greed'], risk['fear_greed'], 'fear_greed'),
+        ('恐懼/貪婪', risk['raw_fear_greed'], risk['fear_greed'], 'fear_greed'),
         ('信用利差 %', risk['raw_spread'], risk['credit_spread'], 'credit'),
         ('美元指數 DXY', risk['raw_dxy'], risk['dollar'], 'dxy'),
         ('USD/JPY', risk['raw_jpy'], risk['usd_jpy'], 'usd_jpy'),
@@ -541,7 +541,7 @@ def main():
     col_radar, col_bar = st.columns([1, 1])
     
     with col_radar:
-        labels = ['VIX', '信用利差', 'CNN恐懼貪淨', '美元指數', 'USD/JPY']
+        labels = ['VIX', '信用利差', '恐懼/貪婪', '美元指數', 'USD/JPY']
         values = [risk['vix'], risk['credit_spread'], risk['fear_greed'], risk['dollar'], risk['usd_jpy']]
         labels.append(labels[0])
         values.append(values[0])
@@ -562,7 +562,7 @@ def main():
         st.subheader("風險指標分數")
         
         # 柱狀圖（垂直）- 使用各指標燈號顏色（用原始值判斷）
-        indicator_names = ['VIX', 'CNN恐懼貪淨', '信用利差', '美元指數', 'USD/JPY']
+        indicator_names = ['VIX', '恐懼/貪婪', '信用利差', '美元指數', 'USD/JPY']
         raw_values = [risk['raw_vix'], risk['raw_fear_greed'], risk['raw_spread'], risk['raw_dxy'], risk['raw_jpy']]
         score_values = [risk['vix'], risk['fear_greed'], risk['credit_spread'], risk['dollar'], risk['usd_jpy']]
         
@@ -735,7 +735,7 @@ def main():
     with col_src1:
         st.caption("**VIX**: Yahoo Finance (^VIX)")
     with col_src2:
-        st.caption("**CNN恐懼貪淨**: feargreedmeter.com")
+        st.caption("**恐懼/貪婪**: feargreedmeter.com")
     with col_src3:
         st.caption("**信用利差**: FRED (BAMLH0A0HYM2)")
     with col_src4:
