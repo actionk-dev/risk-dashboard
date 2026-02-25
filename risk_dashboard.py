@@ -1,5 +1,5 @@
 """
-美股市場風險評估儀表板
+美股市場風險評估
 """
 import streamlit as st
 import yfinance as yf
@@ -297,7 +297,7 @@ INDICATOR_DESC = {
 
 # ==================== 主程式 ====================
 def main():
-    st.title("美股市場風險評估儀表板")
+    st.title("美股市場風險評估")
     st.markdown(f"**LAST UPDATE** - {datetime.now().strftime('%Y 年 %m 月 %d 日 %H:%M')}")
     st.markdown("---")
     
@@ -793,7 +793,7 @@ def main():
         st.warning("數據不足，無法顯示歷史走勢")
     
     # 數據來源資訊
-    st.subheader("📡 數據來源")
+    st.subheader("數據來源")
     col_src1, col_src2, col_src3, col_src4 = st.columns(4)
     with col_src1:
         st.caption("**VIX**: Yahoo Finance (^VIX)")
