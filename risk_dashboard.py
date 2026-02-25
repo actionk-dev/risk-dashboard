@@ -597,14 +597,14 @@ def main():
     st.subheader("📈 綜合風險指數歷史")
     
     # 時間區間和股票代碼選擇
-    col_period1, col_period2, col_stock = st.columns([1, 1, 2])
+    col_period1, col_stock = st.columns([1, 2])
     with col_period1:
         period = st.selectbox("選擇時間區間", 
                               ["1mo", "3mo", "6mo", "1y", "2y", "5y"], 
                               index=3, 
                               label_visibility="collapsed")
     with col_stock:
-        compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, TSMC, 2330.TW").upper()
+        compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, NVDA, SPY, TSM, 2330.TW").upper()
     
     # 獲取風險指數歷史
     risk_history = get_risk_index_history(period)
