@@ -348,7 +348,7 @@ def main():
         ('CNN 恐懼/貪澈', risk['raw_fear_greed'], risk['fear_greed'], 'fear_greed'),
         ('信用利差 %', risk['raw_spread'], risk['credit_spread'], 'credit'),
         ('美元指數 DXY', risk['raw_dxy'], risk['dollar'], 'dxy'),
-        ('USD/JPY', risk['raw_jpy'], risk['usd_jpy'], 'jpy'),
+        ('USD/JPY', risk['raw_jpy'], risk['usd_jpy'], 'usd_jpy'),
     ]
     
     for i, (name, value, score, key) in enumerate(indicators):
