@@ -109,7 +109,11 @@ jobs:
           try:
               credit_df = pd.read_csv("https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2")
               if len(credit_df) > 0:
-                  credit_spread = float(credit_df['BAMLH0A0HYM2'].iloc[-1])
+                  cs_val = credit_df['BAMLH0A0HYM2']
+                  if hasattr(cs_val, 'iloc'):
+                      credit_spread = float(cs_val.iloc[-1])
+                  else:
+                      credit_spread = float(cs_val)
           except:
               pass
 
