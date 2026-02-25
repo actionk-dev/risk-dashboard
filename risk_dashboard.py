@@ -384,7 +384,7 @@ def main():
                 fig_spark = go.Figure()
                 fig_spark.add_trace(go.Scatter(
                     x=list(range(len(hist_data))),
-                    y=hist_data.values,
+                    y=[float(x) for x in hist_data.values.flatten()] if len(hist_data.shape) > 1 else [float(x) for x in hist_data.values],
                     mode="lines",
                     line=dict(color=line_color, width=2),
                     fill='tozeroy',
