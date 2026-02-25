@@ -313,9 +313,9 @@ def main():
         stock_symbol = "TSM"  # 隱藏輸入
         period = "1y"  # 隱藏選擇
         
-        if st.button("🔄 刷新數據_data.clear()
-           "):
-            st.cache st.rerun()
+        if st.button("🔄 刷新數據"):
+            st.cache_data.clear()
+            st.rerun()
     
     # 載入數據
     with st.spinner("正在載入市場數據..."):
