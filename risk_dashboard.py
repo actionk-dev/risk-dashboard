@@ -599,6 +599,7 @@ def main():
     # 時間區間和股票代碼選擇
     col_period1, col_stock = st.columns([1, 2])
     with col_period1:
+        st.caption("時間範圍")
         period = st.selectbox("選擇時間區間", 
                               ["1mo", "3mo", "6mo", "1y", "2y", "5y"], 
                               index=3, 
