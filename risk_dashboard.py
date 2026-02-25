@@ -356,10 +356,10 @@ def main():
             st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 全球避險 + 日圓套利同時平倉，壓力最大 🔴")
         elif dxy_trend == "down" and jpy_trend == "down":
             # DXY 下跌 + USD/JPY 下跌 = 日圓升值 = 純日圓套利平倉
-            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 純粹日圓套利平倉驅動，針對性風險 🟡")
+            st.error(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 純粹日圓套利平倉驅動，針對性風險 🟠")
         elif dxy_trend == "up" and jpy_trend == "up":
             # 兩者同向上漲 = 美元全面強勢
-            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 美元全面強勢，對新興市場和商品不利 🟠")
+            st.warning(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 美元全面強勢，對新興市場和商品不利 🟡")
         else:
             # 中性或其他組合
             st.success(f"**美元+日幣**: DXY {risk['raw_dxy']:.2f} + USD/JPY {risk['raw_jpy']:.2f} — 趨勢不明顯或無趨勢 🟢")
