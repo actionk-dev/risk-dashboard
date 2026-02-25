@@ -462,8 +462,8 @@ def main():
     
     st.markdown("---")
     
-    # 雷達圖 + 柱狀圖 + 歷史圖
-    col_radar, col_bar, col_history = st.columns([1, 1, 2])
+    # 雷達圖 + 柱狀圖
+    col_radar, col_bar = st.columns([1, 1])
     
     with col_radar:
         labels = ['VIX', '信用利差', '恐懼/貪澈', '美元指數', 'USD/JPY']
@@ -486,11 +486,12 @@ def main():
     with col_bar:
         st.subheader("📊 風險指標分數")
         
-        # 柱狀圖（垂直）- 使用各指標燈號顏色
+        # 柱狀圖（垂直）- 使用各指標燈號顏色（用原始值判斷）
         indicator_names = ['VIX', '恐懼/貪澈', '信用利差', '美元指數', 'USD/JPY']
-        indicator_values = [risk['vix'], risk['fear_greed'], risk['credit_spread'], risk['dollar'], risk['usd_jpy']]
+        raw_values = [risk['raw_vix'], risk['raw_fear_greed'], risk['raw_spread'], risk['raw_dxy'], risk['raw_jpy']]
+        score_values = [risk['vix'], risk['fear_greed'], risk['credit_spread'], risk['dollar'], risk['usd_jpy']]
         
-        # 根據燈號邏輯設定顏色
+        # 根據原始值設定顏色
         def get_light_color(key, value):
             if key == 'vix':
                 return '#00ff9d' if value < 15 else '#ffb347' if value < 25 else '#ff8c00' if value < 35 else '#ff4d6d'
@@ -504,13 +505,13 @@ def main():
                 return '#00ff9d' if value < 130 else '#ffb347' if value < 145 else '#ff8c00' if value < 160 else '#ff4d6d'
         
         keys = ['vix', 'fear_greed', 'credit', 'dxy', 'usd_jpy']
-        indicator_colors = [get_light_color(k, v) for k, v in zip(keys, indicator_values)]
+        indicator_colors = [get_light_color(k, v) for k, v in zip(keys, raw_values)]
         
         fig_bar = go.Figure(go.Bar(
             x=indicator_names,
-            y=indicator_values,
+            y=score_values,
             marker_color=indicator_colors,
-            text=[f'{v:.1f}' for v in indicator_values],
+            text=[f'{v:.1f}' for v in score_values],
             textposition='outside',
             textfont=dict(color='#c8d8e8', size=11)
         ))
@@ -525,32 +526,33 @@ def main():
         )
         st.plotly_chart(fig_bar, use_container_width=True)
     
-    with col_history:
-        st.subheader(f"📈 {stock_symbol} 與市場風險指數歷史關係")
+    # 歷史圖放下一行
+    st.markdown("---")
+    st.subheader(f"📈 {stock_symbol} 與市場風險指數歷史關係")
+    
+    if len(stock_data) > 0 and len(vix_data) > 0:
+        # 對齊數據
+        vix_clean = vix_data.dropna()
+        stock_clean = stock_data.dropna()
         
-        if len(stock_data) > 0 and len(vix_data) > 0:
-            # 對齊數據
-            vix_clean = vix_data.dropna()
-            stock_clean = stock_data.dropna()
-            
-            if len(vix_clean) > 0 and len(stock_clean) > 0:
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=vix_clean.index, y=vix_clean.values, name="VIX", 
-                                        line=dict(color='red'), yaxis='y1'))
-                fig.add_trace(go.Scatter(x=stock_clean.index, y=stock_clean.values, name=f"{stock_symbol}", 
-                                        line=dict(color='blue'), yaxis='y2'))
-                fig.update_layout(
-                    xaxis=dict(title="日期", rangeslider=dict(visible=True)),
-                    yaxis=dict(title="VIX", side='left'),
-                    yaxis2=dict(title=f"{stock_symbol}", overlaying='y', side='right'),
-                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
-                    font_color='#c8d8e8', height=400
-                )
-                st.plotly_chart(fig, width='stretch')
-            else:
-                st.warning("數據不足，無法顯示歷史走勢")
+        if len(vix_clean) > 0 and len(stock_clean) > 0:
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=vix_clean.index, y=vix_clean.values, name="VIX", 
+                                    line=dict(color='red'), yaxis='y1'))
+            fig.add_trace(go.Scatter(x=stock_clean.index, y=stock_clean.values, name=f"{stock_symbol}", 
+                                    line=dict(color='blue'), yaxis='y2'))
+            fig.update_layout(
+                xaxis=dict(title="日期", rangeslider=dict(visible=True)),
+                yaxis=dict(title="VIX", side='left'),
+                yaxis2=dict(title=f"{stock_symbol}", overlaying='y', side='right'),
+                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', 
+                font_color='#c8d8e8', height=350
+            )
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.warning("數據不足，無法顯示歷史走勢")
+    else:
+        st.warning("數據不足，無法顯示歷史走勢")
     
     st.markdown("---")
     
