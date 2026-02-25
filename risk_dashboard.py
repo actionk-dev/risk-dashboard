@@ -143,11 +143,11 @@ def get_credit_spread_history(days=7):
         url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
         df = pd.read_csv(url)
         if len(df) > days:
-            # 取得最近 days 天的數據
-            return df.iloc[-days:]['BAMLH0A0HYM2'].tolist()
-        return None
+            # 取得最近 days 天的數據，返回 pandas Series
+            return df.iloc[-days:]['BAMLH0A0HYM2'].reset_index(drop=True)
+        return pd.Series([])
     except:
-        return None
+        return pd.Series([])
 
 # ==================== 風險評分計算 ====================
 def calculate_risk_score(vix, credit_spread, fear_greed, dxy, usd_jpy):
