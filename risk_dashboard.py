@@ -5,7 +5,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import os
 CSV_FILE = "risk_history.csv"
@@ -742,8 +742,8 @@ def main():
         
         if len(csv_df) > 0:
             # 獲取最近一週的數據
-            today = datetime.datetime.now()
-            week_ago = today - datetime.timedelta(days=7)
+            today = datetime.now()
+            week_ago = today - timedelta(days=7)
             
             # 過濾最近一週
             recent_data = csv_df[csv_df.index >= week_ago]
