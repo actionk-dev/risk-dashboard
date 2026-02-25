@@ -2,7 +2,6 @@ name: Daily Risk Data Collection
 
 on:
   schedule:
-    # 每天 UTC 0點 (台灣早上8點) 執行
     - cron: '0 0 * * *'
   workflow_dispatch:
 
@@ -21,12 +20,10 @@ jobs:
       - name: Install dependencies
         run: |
           pip install pandas yfinance requests
-          
+        
       - name: Collect today's data
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 << 'EOF'
+          python3 << 'PYEOF'
           import pandas as pd
           import yfinance as yf
           import requests
@@ -37,62 +34,71 @@ jobs:
           CSV_FILE = "risk_history.csv"
           WEIGHTS = {'vix': 0.25, 'fear_greed': 0.20, 'credit_spread': 0.25, 'dollar': 0.15, 'usd_jpy': 0.15}
 
-          def calculate_risk_score(vix, credit, fear_greed, dxy, jpy):
-              # VIX scoring
-              if vix < 15: vix_score = 100 - vix * 4
-              elif vix < 25: vix_score = 60 - (vix - 15) * 2
-              elif vix < 35: vix_score = 40 - (vix - 25) * 4
-              else: vix_score = max(0, 20 - (vix - 35) * 2)
-              
-              # Fear/Greed scoring
-              fg_score = fear_greed
-              
-              # Credit spread scoring
-              if credit: 
-                  if credit < 2: cs_score = 100 - credit * 20
-                  elif credit < 3: cs_score = 60 - (credit - 2) * 20
-                  elif credit < 4: cs_score = 40 - (credit - 3) * 20
-                  else: cs_score = max(0, 20 - (credit - 4) * 10)
-              else:
-                  cs_score = 50
-              
-              # Dollar scoring
-              if dxy < 100: dxy_score = 100 - dxy
-              elif dxy < 105: dxy_score = 50 - (dxy - 100) * 2
-              elif dxy < 110: dxy_score = 40 - (dxy - 105) * 4
-              else: dxy_score = max(0, 20 - (dxy - 110) * 2)
-              
-              # USD/JPY scoring
-              if jpy < 130: jpy_score = 100 - (130 - jpy) * 0.5
-              elif jpy < 145: jpy_score = 50
-              elif jpy < 160: jpy_score = 40 - (jpy - 145) * 2
-              else: jpy_score = max(0, 20 - (jpy - 160) * 2)
-              
-              total = (vix_score * WEIGHTS['vix'] + fg_score * WEIGHTS['fear_greed'] + 
-                      cs_score * WEIGHTS['credit_spread'] + dxy_score * WEIGHTS['dollar'] + 
-                      jpy_score * WEIGHTS['usd_jpy'])
-              
-              return {
-                  'vix': vix_score,
-                  'fear_greed': fg_score,
-                  'credit_spread': cs_score,
-                  'dollar': dxy_score,
-                  'usd_jpy': jpy_score,
-                  'total': total
-              }
+          def get_single_value(data, default):
+              """Safely extract a single float value from yfinance data"""
+              try:
+                  if data is None or len(data) == 0:
+                      return default
+                  close = data.get('Close')
+                  if close is None:
+                      return default
+                  # Get the last value
+                  val = close.iloc[-1]
+                  # If it's still a Series/DataFrame, try to get the first value
+                  while hasattr(val, 'iloc'):
+                      val = val.iloc[0]
+                  return float(val)
+              except Exception as e:
+                  print(f"Error getting value: {e}")
+                  return default
 
-          # Get VIX
-          vix = yf.download("^VIX", progress=False)
-          if len(vix) > 0:
-              vix_close = vix['Close']
-              if hasattr(vix_close, 'iloc'):
-                  latest_vix = float(vix_close.iloc[-1])
-              else:
-                  latest_vix = float(vix_close)
-          else:
+          def calculate_risk_score(vix, credit, fear_greed, dxy, jpy):
+              try:
+                  if vix < 15: vix_score = 100 - vix * 4
+                  elif vix < 25: vix_score = 60 - (vix - 15) * 2
+                  elif vix < 35: vix_score = 40 - (vix - 25) * 4
+                  else: vix_score = max(0, 20 - (vix - 35) * 2)
+                  
+                  fg_score = fear_greed
+                  
+                  if credit: 
+                      if credit < 2: cs_score = 100 - credit * 20
+                      elif credit < 3: cs_score = 60 - (credit - 2) * 20
+                      elif credit < 4: cs_score = 40 - (credit - 3) * 20
+                      else: cs_score = max(0, 20 - (credit - 4) * 10)
+                  else:
+                      cs_score = 50
+                  
+                  if dxy < 100: dxy_score = 100 - dxy
+                  elif dxy < 105: dxy_score = 50 - (dxy - 100) * 2
+                  elif dxy < 110: dxy_score = 40 - (dxy - 105) * 4
+                  else: dxy_score = max(0, 20 - (dxy - 110) * 2)
+                  
+                  if jpy < 130: jpy_score = 100 - (130 - jpy) * 0.5
+                  elif jpy < 145: jpy_score = 50
+                  elif jpy < 160: jpy_score = 40 - (jpy - 145) * 2
+                  else: jpy_score = max(0, 20 - (jpy - 160) * 2)
+                  
+                  total = (vix_score * WEIGHTS['vix'] + fg_score * WEIGHTS['fear_greed'] + 
+                          cs_score * WEIGHTS['credit_spread'] + dxy_score * WEIGHTS['dollar'] + 
+                          jpy_score * WEIGHTS['usd_jpy'])
+                  
+                  return {
+                      'vix': vix_score, 'fear_greed': fg_score, 'credit_spread': cs_score,
+                      'dollar': dxy_score, 'usd_jpy': jpy_score, 'total': total
+                  }
+              except Exception as e:
+                  print(f"Error calculating risk: {e}")
+                  return {'vix': 50, 'fear_greed': 50, 'credit_spread': 50, 'dollar': 50, 'usd_jpy': 50, 'total': 50}
+
+          # Get data
+          try:
+              vix_data = yf.download("^VIX", progress=False)
+              latest_vix = get_single_value(vix_data, 18)
+          except Exception as e:
+              print(f"VIX error: {e}")
               latest_vix = 18
 
-          # Get Fear/Greed
           fear_greed = 50
           try:
               headers = {'User-Agent': 'Mozilla/5.0'}
@@ -104,45 +110,29 @@ jobs:
           except:
               pass
 
-          # Get Credit Spread
           credit_spread = 3.0
           try:
               credit_df = pd.read_csv("https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2")
               if len(credit_df) > 0:
-                  cs_val = credit_df['BAMLH0A0HYM2']
-                  if hasattr(cs_val, 'iloc'):
-                      credit_spread = float(cs_val.iloc[-1])
-                  else:
-                      credit_spread = float(cs_val)
+                  cs_val = credit_df['BAMLH0A0HYM2'].iloc[-1]
+                  credit_spread = float(cs_val) if not pd.isna(cs_val) else 3.0
           except:
               pass
 
-          # Get DXY
-          dxy = yf.download("DX-Y.NYB", progress=False)
-          if len(dxy) > 0:
-              dxy_close = dxy['Close']
-              if hasattr(dxy_close, 'iloc'):
-                  latest_dxy = float(dxy_close.iloc[-1])
-              else:
-                  latest_dxy = float(dxy_close)
-          else:
+          try:
+              dxy_data = yf.download("DX-Y.NYB", progress=False)
+              latest_dxy = get_single_value(dxy_data, 100)
+          except:
               latest_dxy = 100
 
-          # Get USD/JPY
-          jpy = yf.download("JPY=X", progress=False)
-          if len(jpy) > 0:
-              jpy_close = jpy['Close']
-              if hasattr(jpy_close, 'iloc'):
-                  latest_jpy = float(jpy_close.iloc[-1])
-              else:
-                  latest_jpy = float(jpy_close)
-          else:
+          try:
+              jpy_data = yf.download("JPY=X", progress=False)
+              latest_jpy = get_single_value(jpy_data, 150)
+          except:
               latest_jpy = 150
 
-          # Calculate risk
           risk = calculate_risk_score(latest_vix, credit_spread, fear_greed, latest_dxy, latest_jpy)
 
-          # Save to CSV
           today = datetime.now().strftime('%Y-%m-%d')
           
           if os.path.exists(CSV_FILE):
@@ -165,7 +155,7 @@ jobs:
           
           df.to_csv(CSV_FILE, index=False)
           print(f"Saved: {today} VIX={latest_vix} FG={fear_greed} Risk={risk['total']:.1f}")
-          EOF
+          PYEOF
 
       - name: Commit and push
         run: |
