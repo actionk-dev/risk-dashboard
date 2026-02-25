@@ -653,7 +653,7 @@ def main():
             mode='lines+markers',
             name='綜合風險指數',
             line=dict(color='#00d4ff', width=3),
-            marker=dict(color=colors, size=5),
+            marker=dict(color=colors, size=3),
             yaxis='y1'
         ))
         
