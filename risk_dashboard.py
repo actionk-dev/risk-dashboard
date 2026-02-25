@@ -596,16 +596,23 @@ def main():
     st.markdown("---")
     st.subheader("📈 綜合風險指數歷史")
     
-    # 時間區間選擇
-    col_period1, col_period2 = st.columns([1, 4])
+    # 時間區間和股票代碼選擇
+    col_period1, col_period2, col_stock = st.columns([1, 1, 2])
     with col_period1:
         period = st.selectbox("選擇時間區間", 
                               ["1mo", "3mo", "6mo", "1y", "2y", "5y"], 
                               index=3, 
                               label_visibility="collapsed")
+    with col_stock:
+        compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, TSMC, 2330.TW").upper()
     
     # 獲取風險指數歷史
     risk_history = get_risk_index_history(period)
+    
+    # 獲取股票數據（如果有輸入）
+    stock_data = None
+    if compare_stock:
+        stock_data = get_stock_data(compare_stock, period)
     
     if len(risk_history) > 0:
         # 根據風險等級設定顏色
@@ -623,17 +630,55 @@ def main():
         colors = [get_risk_color(v) for v in risk_history.values]
         
         # 計算y軸範圍（根據實際數據調整，使波動更明顯）
-        y_min = max(0, risk_history.min() - 10)
-        y_max = min(100, risk_history.max() + 10)
+        y_min = risk_history.min() - 10
+        y_max = risk_history.max() + 10
         
         fig_risk = go.Figure()
+        
+        # 添加風險指數線
         fig_risk.add_trace(go.Scatter(
             x=risk_history.index, 
             y=risk_history.values,
             mode='lines+markers',
+            name='綜合風險指數',
             line=dict(color='#00d4ff', width=3),
             marker=dict(color=colors, size=5),
+            yaxis='y1'
         ))
+        
+        # 如果，添加股票有股票數據線
+        if stock_data is not None and len(stock_data) > 0:
+            # 處理 MultiIndex
+            if isinstance(stock_data, pd.DataFrame):
+                if 'Close' in stock_data.columns:
+                    stock_clean = stock_data['Close']
+                else:
+                    stock_clean = stock_data.iloc[:, 0]
+            else:
+                stock_clean = stock_data
+            
+            if len(stock_clean) > 0:
+                # 對齊日期
+                common_idx = risk_history.index.intersection(stock_clean.index)
+                if len(common_idx) > 0:
+                    stock_aligned = stock_clean.loc[common_idx]
+                    
+                    # 標準化股票數據到風險指數範圍
+                    stock_min = stock_aligned.min()
+                    stock_max = stock_aligned.max()
+                    if stock_max > stock_min:
+                        stock_normalized = (stock_aligned - stock_min) / (stock_max - stock_min) * (y_max - y_min) + y_min
+                    else:
+                        stock_normalized = stock_aligned
+                    
+                    fig_risk.add_trace(go.Scatter(
+                        x=common_idx,
+                        y=stock_normalized.values,
+                        mode='lines',
+                        name=f'{compare_stock} (標準化)',
+                        line=dict(color='#ff4d6d', width=2, dash='dash'),
+                        yaxis='y1'
+                    ))
         
         # 添加風險區間背景
         fig_risk.add_hrect(y0=0, y1=40, fillcolor="rgba(0,255,157,0.1)", line_width=0, annotation_text="低風險", annotation_position="top left")
