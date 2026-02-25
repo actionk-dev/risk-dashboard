@@ -47,6 +47,40 @@ def get_vix_data(period="1y"):
     except:
         return pd.Series([])
 
+@st.cache_data(ttl=900)
+def get_fear_greed_index():
+    """從 feargreedmeter.com 獲取 CNN 恐懼/貪婪指數"""
+    try:
+        import re
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+        response = requests.get("https://feargreedmeter.com/", headers=headers, timeout=10)
+        if response.status_code == 200:
+            # 找數字: "43" 之類的值
+            match = re.search(r'/fear-and-greed-index["\s]*>\s*(\d+)\s*<', response.text)
+            if match:
+                return int(match.group(1))
+            # 備用方式
+            match = re.search(r'"fearGreedIndex"\s*:\s*(\d+)', response.text)
+            if match:
+                return int(match.group(1))
+        return None
+    except:
+        return None
+
+@st.cache_data(ttl=3600)
+def get_credit_spread():
+    """從 FRED 獲取信用利差 (BAMLH0A0HYM2)"""
+    try:
+        # 使用 pandas_datareader 從 FRED 獲取
+        from pandas_datareader import data as web
+        df = web.DataReader('BAMLH0A0HYM2', 'fred')
+        if len(df) > 0:
+            return float(df.iloc[-1]['BAMLH0A0HYM2'])
+        return None
+    except Exception as e:
+        st.warning(f"FRED 數據獲取失敗: {e}")
+        return None
+
 @st.cache_data(ttl=3600)
 def get_stock_data(symbol, period="1y"):
     try:
@@ -119,9 +153,23 @@ def main():
     with st.spinner("正在載入市場數據..."):
         vix_data = get_vix_data(period)
         stock_data = get_stock_data(stock_symbol, period)
+        fear_greed = get_fear_greed_index()
+        credit_spread = get_credit_spread()
         
         latest_vix = float(vix_data.iloc[-1]) if len(vix_data) > 0 else 20.0
-        risk = calculate_risk_score(latest_vix, 3.0, 50, 102, 150)
+        
+        # 獲取美元指數和 USD/JPY
+        dxy_data = get_stock_data("DX-Y.NYB", period)  # 美元指數
+        usdjpy_data = get_stock_data("JPY=X", period)  # USD/JPY
+        
+        latest_dxy = float(dxy_data.iloc[-1]) if len(dxy_data) > 0 else 102.0
+        latest_usdjpy = float(usdjpy_data.iloc[-1]) if len(usdjpy_data) > 0 else 150.0
+        
+        # 使用真實數據，若獲取失敗則使用預設值
+        fear_greed_value = fear_greed if fear_greed is not None else 50
+        credit_spread_value = credit_spread if credit_spread is not None else 3.0
+        
+        risk = calculate_risk_score(latest_vix, credit_spread_value, fear_greed_value, latest_dxy, latest_usdjpy)
     
     # 風險等級
     if risk['total'] < 40:
@@ -291,7 +339,20 @@ def main():
             st.warning("數據不足，無法顯示歷史走勢")
     
     st.markdown("---")
-    st.caption(f"數據更新時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | 數據來源: Yahoo Finance")
+    
+    # 數據來源資訊
+    st.subheader("📡 數據來源")
+    col_src1, col_src2, col_src3, col_src4 = st.columns(4)
+    with col_src1:
+        st.caption("**VIX**: Yahoo Finance (^VIX)")
+    with col_src2:
+        st.caption("**恐懼/貪澈**: feargreedmeter.com")
+    with col_src3:
+        st.caption("**信用利差**: FRED (BAMLH0A0HYM2)")
+    with col_src4:
+        st.caption("**美元指數**: Yahoo Finance (DX-Y.NYB)")
+    
+    st.caption(f"數據更新時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | 頁面自動刷新: 15分鐘")
 
 if __name__ == "__main__":
     main()
