@@ -264,7 +264,7 @@ def main():
                 ],
             }
         ))
-        fig_gauge.update_layout(height=250, paper_bgcolor='rgba(0,0,0,0)', font_color='#c8d8e8')
+        fig_gauge.update_layout(height=350, paper_bgcolor='rgba(0,0,0,0)', font_color='#c8d8e8')
         st.plotly_chart(fig_gauge, width='stretch')
         st.markdown(f"<div style='text-align:center; color:{risk_color}; font-size:18px;'>{risk_level}</div>", unsafe_allow_html=True)
     
@@ -367,6 +367,71 @@ def main():
                 st.markdown(f"<div style='color:#8a9bb0; font-size:12px; margin-top:-10px;'>➖ 無趨勢數據</div>", unsafe_allow_html=True)
             
             st.caption(INDICATOR_DESC.get(key, ''))
+    
+    st.markdown("---")
+    
+    # 一週趨勢走勢圖
+    st.subheader("📊 一週指數趨勢走勢")
+    
+    # 獲取各指標歷史數據
+    vix_7d = get_indicator_history("^VIX", 7)
+    dxy_7d = get_indicator_history("DX-Y.NYB", 7)
+    jpy_7d = get_indicator_history("JPY=X", 7)
+    credit_7d = get_credit_spread_history(7)
+    
+    if vix_7d is not None and len(vix_7d) > 1:
+        fig_trend = go.Figure()
+        
+        # VIX - 紅色上漲趨勢, 白色/灰色下跌
+        if trends['vix'][1] == "up":
+            vix_color = "#ff4d6d"
+        else:
+            vix_color = "#8a9bb0"
+        fig_trend.add_trace(go.Scatter(
+            x=list(range(len(vix_7d))), y=vix_7d.values,
+            name="VIX", mode="lines+markers",
+            line=dict(color=vix_color, width=2),
+            marker=dict(size=6)
+        ))
+        
+        # DXY
+        if trends['dxy'][1] == "up":
+            dxy_color = "#ff4d6d"
+        else:
+            dxy_color = "#8a9bb0"
+        fig_trend.add_trace(go.Scatter(
+            x=list(range(len(dxy_7d))), y=dxy_7d.values,
+            name="美元指數 DXY", mode="lines+markers",
+            line=dict(color=dxy_color, width=2),
+            marker=dict(size=6)
+        ))
+        
+        # USD/JPY
+        if trends['usd_jpy'][1] == "up":
+            jpy_color = "#ff4d6d"
+        else:
+            jpy_color = "#8a9bb0"
+        fig_trend.add_trace(go.Scatter(
+            x=list(range(len(jpy_7d))), y=jpy_7d.values,
+            name="USD/JPY", mode="lines+markers",
+            line=dict(color=jpy_color, width=2),
+            marker=dict(size=6)
+        ))
+        
+        fig_trend.update_layout(
+            xaxis_title="天數 (過去7天)",
+            yaxis_title="指數值",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_color='#c8d8e8',
+            height=300,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            xaxis=dict(showgrid=True, gridcolor='#1e2d45'),
+            yaxis=dict(showgrid=True, gridcolor='#1e2d45'),
+        )
+        st.plotly_chart(fig_trend, width='stretch')
+    else:
+        st.warning("無法載入趨勢數據")
     
     st.markdown("---")
     
