@@ -742,7 +742,6 @@ def main():
         
         if len(csv_df) > 0:
             # 獲取最近一週的數據
-            import datetime
             today = datetime.datetime.now()
             week_ago = today - datetime.timedelta(days=7)
             
