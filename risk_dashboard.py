@@ -560,15 +560,15 @@ def main():
         # 根據原始值設定顏色
         def get_light_color(key, value):
             if key == 'vix':
-                return '#00ff9d' if value < 15 else '#ffb347' if value < 25 else '#ff8c00' if value < 35 else '#ff4d6d'
+                return '#00ff9d' if value < 15 else '#FFD700' if value < 25 else '#FF6B00' if value < 35 else '#ff4d6d'
             elif key == 'fear_greed':
-                return '#00ff9d' if value < 25 else '#ffb347' if value < 45 else '#8a9bb0' if value < 55 else '#ff8c00' if value < 75 else '#ff4d6d'
+                return '#00ff9d' if value < 25 else '#FFD700' if value < 45 else '#8a9bb0' if value < 55 else '#FF6B00' if value < 75 else '#ff4d6d'
             elif key == 'credit':
-                return '#00ff9d' if value < 2 else '#ffb347' if value < 3 else '#ff8c00' if value < 4 else '#ff4d6d'
+                return '#00ff9d' if value < 2 else '#FFD700' if value < 3 else '#FF6B00' if value < 4 else '#ff4d6d'
             elif key == 'dxy':
-                return '#00ff9d' if value < 100 else '#ffb347' if value < 105 else '#ff8c00' if value < 110 else '#ff4d6d'
+                return '#00ff9d' if value < 100 else '#FFD700' if value < 105 else '#FF6B00' if value < 110 else '#ff4d6d'
             else:  # usd_jpy
-                return '#00ff9d' if value < 130 else '#ffb347' if value < 145 else '#ff8c00' if value < 160 else '#ff4d6d'
+                return '#00ff9d' if value < 130 else '#FFD700' if value < 145 else '#FF6B00' if value < 160 else '#ff4d6d'
         
         keys = ['vix', 'fear_greed', 'credit', 'dxy', 'usd_jpy']
         indicator_colors = [get_light_color(k, v) for k, v in zip(keys, raw_values)]
@@ -613,9 +613,9 @@ def main():
             if value < 40:
                 return '#00ff9d'  # 綠色
             elif value < 60:
-                return '#ffb347'  # 黃色
+                return '#FFD700'  # 亮黃色
             elif value < 80:
-                return '#ff8c00'  # 橘色
+                return '#FF6B00'  # 橘色
             else:
                 return '#ff4d6d'  # 紅色
         
