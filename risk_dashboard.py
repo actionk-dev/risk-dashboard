@@ -697,14 +697,19 @@ def main():
         )
         st.plotly_chart(fig_risk, use_container_width=True)
         
-        # 統計數據
-        avg_risk = risk_history.mean()
-        max_risk = risk_history.max()
-        min_risk = risk_history.min()
+        # 統計數據（包含今天的即時數據）
+        # 加入今天的即時風險指數
+        all_risk = list(risk_history.values) + [risk['total']]
+        
+        avg_risk = sum(all_risk) / len(all_risk)
+        max_risk = max(all_risk)
+        min_risk = min(all_risk)
+        current_risk = risk['total']
         
         st.markdown(f"""
         <div style='text-align:center; color:#c8d8e8; margin-top:10px;'>
             <span style='font-size:14px;'>📊 統計數據</span><br>
+            <span style='color:#E0E0E0;'>今日: {current_risk:.1f}</span> | 
             <span style='color:#00d4ff;'>平均: {avg_risk:.1f}</span> | 
             <span style='color:#ff4d6d;'>最高: {max_risk:.1f}</span> | 
             <span style='color:#00ff9d;'>最低: {min_risk:.1f}</span>
