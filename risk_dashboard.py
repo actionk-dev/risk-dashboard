@@ -462,31 +462,39 @@ def main():
     
     st.markdown("---")
     
-    # 雷達圖 + 歷史圖
-    col_radar, col_history = st.columns([1, 2])
+    # 指標柱狀圖 + 歷史圖
+    col_bar, col_history = st.columns([1, 2])
     
-    with col_radar:
-        labels = ['VIX', '信用利差', '恐懼/貪澈', '美元指數', 'USD/JPY']
-        values = [risk['vix'], risk['credit_spread'], risk['fear_greed'], risk['dollar'], risk['usd_jpy']]
-        labels.append(labels[0])
-        values.append(values[0])
+    with col_bar:
+        st.subheader("📊 風險指標分數")
         
-        fig_radar = go.Figure(go.Scatterpolar(
-            r=values, theta=labels, fill='toself',
-            fillcolor='rgba(0,212,255,0.1)', line_color='#00d4ff'))
-        fig_radar.update_layout(
-            polar=dict(bgcolor='rgba(0,0,0,0)', 
-                      radialaxis=dict(visible=True, range=[0, 100], color='#4a6080'),
-                      angularaxis=dict(color='#c8d8e8', tickfont=dict(size=12, color='#c8d8e8'))),
-            paper_bgcolor='rgba(0,0,0,0)', font_color='#c8d8e8', height=350
+        # 柱狀圖
+        indicator_names = ['VIX', '恐懼/貪澈', '信用利差', '美元指數', 'USD/JPY']
+        indicator_values = [risk['vix'], risk['fear_greed'], risk['credit_spread'], risk['dollar'], risk['usd_jpy']]
+        indicator_colors = ['#ff4d6d', '#ffb347', '#00d4ff', '#8a9bb0', '#8a9bb0']
+        
+        fig_bar = go.Figure(go.Bar(
+            x=indicator_values,
+            y=indicator_names,
+            orientation='h',
+            marker_color=indicator_colors,
+            text=[f'{v:.1f}' for v in indicator_values],
+            textposition='outside',
+            textfont=dict(color='#c8d8e8', size=12)
+        ))
+        fig_bar.update_layout(
+            height=300,
+            xaxis=dict(range=[0, 100], showgrid=True, gridcolor='#1e2d45', color='#c8d8e8'),
+            yaxis=dict(showgrid=False, color='#c8d8e8'),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_color='#c8d8e8',
+            margin=dict(l=100, r=50, t=30, b=30),
         )
-        st.subheader("🕸️ 風險雷達圖")
-        st.plotly_chart(fig_radar, width='stretch')
+        st.plotly_chart(fig_bar, use_container_width=True)
         
-        # 相關性
-        if len(stock_data) > 0 and len(vix_data) > 0:
-            corr = -0.3  # 簡化
-            st.info(f"**風險指數與 {stock_symbol} 相關係數: {corr:.3f}**\n\n兩者呈現負相關，風險升高時股價傾向下跌")
+        # 綜合風險指數
+        st.metric("綜合風險指數", f"{risk['total']:.1f}", delta=risk_level, delta_color="inverse")
     
     with col_history:
         st.subheader(f"📈 {stock_symbol} 與市場風險指數歷史關係")
