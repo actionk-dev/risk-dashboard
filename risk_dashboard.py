@@ -228,7 +228,7 @@ def main():
         dxy_week_ago = float(dxy_data.iloc[0]) if len(dxy_data) > 1 else None
         usdjpy_week_ago = float(usdjpy_data.iloc[0]) if len(usdjpy_data) > 1 else None
         credit_history = get_credit_spread_history(7)
-        credit_week_ago = credit_history[0] if credit_history and len(credit_history) > 1 else None
+        credit_week_ago = float(credit_history.iloc[0]) if credit_history is not None and len(credit_history) > 1 else None
         
         # 使用真實數據，若獲取失敗則使用預設值
         fear_greed_value = fear_greed if fear_greed is not None else 50
