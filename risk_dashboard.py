@@ -460,14 +460,6 @@ def main():
         else:
             st.success(f"**CNN恐懼/貪婪**: {fgi:.0f} — {fgi_msg}")
 
-        # CNN恐懼/貪婪
-        if risk['raw_fear_greed'] >= 75:
-            st.error(f"**CNN恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場過度貪婪")
-        elif risk['raw_fear_greed'] <= 25:
-            st.error(f"**CNN恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場極度恐懼")
-        elif risk['raw_fear_greed'] <= 45:
-            st.warning(f"**CNN恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場偏向恐懼")
-        
         # 美元+日幣綜合（根據趨勢判斷）
         dxy_trend_val, dxy_trend = trends.get('dxy', (0, 'neutral'))
         jpy_trend_val, jpy_trend = trends.get('usd_jpy', (0, 'neutral'))
