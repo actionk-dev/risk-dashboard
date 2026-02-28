@@ -460,6 +460,29 @@ def main():
         else:
             st.success(f"**CNN恐懼/貪婪**: {fgi:.0f} — {fgi_msg}")
 
+
+        # 信用利差警示（根據記憶標準）
+        credit = risk['raw_spread']
+        if credit < 2:
+            credit_msg = "✅ 低利差 - 市場樂觀，信用風險低"
+            credit_color = "success"
+        elif credit < 3:
+            credit_msg = "⚪ 正常區間 - 市場穩定"
+            credit_color = "success"
+        elif credit < 4:
+            credit_msg = "⚠️ 利差擴大 - 市場緊張，關注信用風險"
+            credit_color = "warning"
+        else:
+            credit_msg = "🔴 高利差 - 信用市場壓力，經濟衰退信號"
+            credit_color = "error"
+        
+        if credit_color == "error":
+            st.error(f"**信用利差**: {credit:.2f}% — {credit_msg}")
+        elif credit_color == "warning":
+            st.warning(f"**信用利差**: {credit:.2f}% — {credit_msg}")
+        else:
+            st.success(f"**信用利差**: {credit:.2f}% — {credit_msg}")
+
         # 美元+日幣綜合（根據趨勢判斷）
         dxy_trend_val, dxy_trend = trends.get('dxy', (0, 'neutral'))
         jpy_trend_val, jpy_trend = trends.get('usd_jpy', (0, 'neutral'))
