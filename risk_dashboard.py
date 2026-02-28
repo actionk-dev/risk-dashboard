@@ -575,11 +575,23 @@ def main():
                         marker=dict(size=8, color='#00d4ff')
                     ))
                     
+                    # 計算y軸範圍，讓波動更明顯
+                    if len(weekly_df) > 1:
+                        data_min = weekly_df['risk_index'].min()
+                        data_max = weekly_df['risk_index'].max()
+                        data_range = data_max - data_min
+                        # 範圍至少拉開 20，才能看出變化
+                        y_min = max(0, data_min - max(10, data_range * 0.5))
+                        y_max = min(100, data_max + max(10, data_range * 0.5))
+                    else:
+                        y_min = 0
+                        y_max = 100
+                    
                     fig_weekly.update_layout(
                         xaxis=dict(title="日期", color='#c8d8e8'),
-                        yaxis=dict(title="風險指數", range=[0, 100], color='#c8d8e8', showgrid=True, gridcolor='#1e2d45'),
+                        yaxis=dict(title="風險指數", range=[y_min, y_max], color='#c8d8e8', showgrid=True, gridcolor='#1e2d45'),
                         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                        font_color='#c8d8e8', height=250,
+                        font_color='#c8d8e8', height=300,
                         margin=dict(l=20, r=20, t=20, b=20)
                     )
                     st.plotly_chart(fig_weekly, use_container_width=True)
