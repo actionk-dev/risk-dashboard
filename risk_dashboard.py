@@ -322,7 +322,7 @@ def main():
         
         # 隱藏股票代碼和時間範圍（使用預設值）
         stock_symbol = "TSM"  # 隱藏輸入
-        period = "1y"  # 隱藏選擇
+        period = "6mo"  # 隱藏選擇
         
         if st.button("🔄 刷新數據"):
             st.cache_data.clear()
@@ -688,11 +688,11 @@ def main():
         st.markdown("<span style='color:#c8d8e8; font-size:14px;'>時間範圍</span>", unsafe_allow_html=True)
         period = st.selectbox("選擇時間區間", 
                               ["1mo", "3mo", "6mo", "1y", "2y", "5y"], 
-                              index=3, 
+                              index=2, 
                               label_visibility="collapsed")
     with col_stock:
         st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)  # 對齊間距
-        compare_stock = st.text_input("輸入股票代碼比較（選填）", value="", placeholder="如: AAPL, NVDA, SPY, TSM, 2330.TW").upper()
+        compare_stock = st.text_input("輸入股票代碼比較（選填）", value="SPY", placeholder="如: AAPL, NVDA, SPY, TSM, 2330.TW").upper()
     
     # 獲取風險指數歷史
     risk_history = get_risk_index_history_v2(period)
