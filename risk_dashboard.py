@@ -638,8 +638,8 @@ def main():
                         data_max = weekly_df['risk_index'].max()
                         data_range = data_max - data_min
                         # 範圍至少拉開 20，才能看出變化
-                        y_min = max(0, data_min - max(10, data_range * 0.5))
-                        y_max = min(100, data_max + max(10, data_range * 0.5))
+                        y_min = max(0, data_min - max(5, data_range * 0.2))
+                        y_max = min(100, data_max + max(5, data_range * 0.2))
                     else:
                         y_min = 0
                         y_max = 100
