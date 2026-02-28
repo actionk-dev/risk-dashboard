@@ -467,7 +467,7 @@ def main():
             credit_msg = "✅ 低利差 - 市場樂觀，信用風險低"
             credit_color = "warning"
         elif credit < 3:
-            credit_msg = "⚠️ 正常區間 - 市場穩定"
+            credit_msg = "🟡 正常區間 - 市場穩定"
             credit_color = "warning"
         elif credit < 4:
             credit_msg = "⚠️ 利差擴大 - 市場緊張，關注信用風險"
