@@ -435,7 +435,7 @@ def main():
         else:
             st.success(f"**VIX**: {vix:.2f} — {vix_msg}")
         
-        # CNN 恐懼/貪腐警示（根據記憶標準）
+        # CNN 恐懼/貪婪警示（根據記憶標準）
         fgi = risk['raw_fear_greed']
         if fgi <= 25:
             fgi_msg = "🔴 極度恐懼 - 恐慌拋售，通常是逆勢進場機會"
@@ -447,18 +447,18 @@ def main():
             fgi_msg = "⚪ 中性 - 沒有明顯傾向，股價可能被合理定價"
             fgi_color = "success"
         elif fgi <= 75:
-            fgi_msg = "⚠️ 貪腐 - 市場偏向樂觀，留意回調風險"
+            fgi_msg = "⚠️ 貪婪 - 市場偏向樂觀，留意回調風險"
             fgi_color = "warning"
         else:
-            fgi_msg = "🔴 極度貪腐 - 市場過度樂觀，警惕反轉，可考慮離場"
+            fgi_msg = "🔴 極度貪婪 - 市場過度樂觀，警惕反轉，可考慮離場"
             fgi_color = "error"
         
         if fgi_color == "error":
-            st.error(f"**CNN恐懼/貪腐**: {fgi:.0f} — {fgi_msg}")
+            st.error(f"**CNN恐懼/貪婪**: {fgi:.0f} — {fgi_msg}")
         elif fgi_color == "warning":
-            st.warning(f"**CNN恐懼/貪腐**: {fgi:.0f} — {fgi_msg}")
+            st.warning(f"**CNN恐懼/貪婪**: {fgi:.0f} — {fgi_msg}")
         else:
-            st.success(f"**CNN恐懼/貪腐**: {fgi:.0f} — {fgi_msg}")
+            st.success(f"**CNN恐懼/貪婪**: {fgi:.0f} — {fgi_msg}")
 
         # CNN恐懼/貪婪
         if risk['raw_fear_greed'] >= 75:
