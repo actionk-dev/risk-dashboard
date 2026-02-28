@@ -410,14 +410,56 @@ def main():
     with col_alerts:
         st.markdown("### ⚡ 警示訊號")
         
-        # VIX
-        if risk['raw_vix'] >= 25:
-            st.error(f"**VIX**: {risk['raw_vix']:.2f} — 高於 25，波動加劇")
-        elif risk['raw_vix'] >= 15:
-            st.warning(f"**VIX**: {risk['raw_vix']:.2f} — 處於中等區間")
+        # VIX 警示（根據 OANDA 標準）
+        vix = risk['raw_vix']
+        if vix < 10:
+            vix_msg = "⚠️ 極度樂觀信號 - 市場過度自信，警惕反轉"
+            vix_color = "error"
+        elif vix < 20:
+            vix_msg = "✅ 正常/穩定 - 市場波動適中，適合風險資產"
+            vix_color = "success"
+        elif vix < 30:
+            vix_msg = "⚠️ 稍微不穩定 - 警惕風險，持續觀察變化"
+            vix_color = "warning"
+        elif vix < 40:
+            vix_msg = "🔶 高波動 - 市場恐懼上升，保守操作"
+            vix_color = "error"
         else:
-            st.success(f"**VIX**: {risk['raw_vix']:.2f} — 市場相對平靜")
+            vix_msg = "🔴 接近恐慌 - 歷史性危機信號，準備進場機會"
+            vix_color = "error"
         
+        if vix_color == "error":
+            st.error(f"**VIX**: {vix:.2f} — {vix_msg}")
+        elif vix_color == "warning":
+            st.warning(f"**VIX**: {vix:.2f} — {vix_msg}")
+        else:
+            st.success(f"**VIX**: {vix:.2f} — {vix_msg}")
+        
+        # CNN 恐懼/貪腐警示（根據記憶標準）
+        fgi = risk['raw_fear_greed']
+        if fgi <= 25:
+            fgi_msg = "🔴 極度恐懼 - 恐慌拋售，通常是逆勢進場機會"
+            fgi_color = "error"
+        elif fgi <= 45:
+            fgi_msg = "⚠️ 恐懼 - 市場偏向恐懼，可逐步布局"
+            fgi_color = "warning"
+        elif fgi <= 55:
+            fgi_msg = "⚪ 中性 - 沒有明顯傾向，股價可能被合理定價"
+            fgi_color = "success"
+        elif fgi <= 75:
+            fgi_msg = "⚠️ 貪腐 - 市場偏向樂觀，留意回調風險"
+            fgi_color = "warning"
+        else:
+            fgi_msg = "🔴 極度貪腐 - 市場過度樂觀，警惕反轉，可考慮離場"
+            fgi_color = "error"
+        
+        if fgi_color == "error":
+            st.error(f"**CNN恐懼/貪腐**: {fgi:.0f} — {fgi_msg}")
+        elif fgi_color == "warning":
+            st.warning(f"**CNN恐懼/貪腐**: {fgi:.0f} — {fgi_msg}")
+        else:
+            st.success(f"**CNN恐懼/貪腐**: {fgi:.0f} — {fgi_msg}")
+
         # CNN恐懼/貪婪
         if risk['raw_fear_greed'] >= 75:
             st.error(f"**CNN恐懼/貪婪**: {risk['raw_fear_greed']:.0f} — 市場過度貪婪")
